@@ -9,6 +9,7 @@ import {
   ChevronDown,
   ChevronRight,
 } from 'lucide-react';
+import logo from '@/assets/logo.png';
 
 type View = 'guide' | 'people' | 'settings' | { type: 'month'; year: number; month: number };
 
@@ -41,11 +42,12 @@ export function AppSidebar({ currentView, onViewChange }: AppSidebarProps) {
     <aside className="w-64 h-screen bg-sidebar text-sidebar-foreground flex flex-col shrink-0 border-r border-sidebar-border">
       {/* Header */}
       <div className="p-4 border-b border-sidebar-border">
-        <h1 className="text-xl font-bold text-sidebar-primary flex items-center gap-2">
-          <Calendar className="w-6 h-6" />
+        <div className="flex items-center justify-center mb-3">
+          <img src={logo} alt="Doggy Oasis International" className="h-12 w-auto" />
+        </div>
+        <h1 className="text-lg font-bold text-sidebar-primary text-center">
           Planning Pro
         </h1>
-        <p className="text-xs text-sidebar-foreground/70 mt-1">Gestion des plannings</p>
       </div>
 
       {/* Navigation */}

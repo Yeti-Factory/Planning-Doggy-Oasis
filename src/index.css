@@ -127,22 +127,28 @@
 
 @layer utilities {
   .shift-morning {
-    @apply bg-shift-morning text-shift-morning-text;
+    background-color: hsl(var(--shift-morning));
+    color: hsl(var(--shift-morning-text));
   }
   .shift-afternoon {
-    @apply bg-shift-afternoon text-shift-afternoon-text;
+    background-color: hsl(var(--shift-afternoon));
+    color: hsl(var(--shift-afternoon-text));
   }
   .shift-fullday {
-    @apply bg-shift-fullday text-shift-fullday-text;
+    background-color: hsl(var(--shift-fullday));
+    color: hsl(var(--shift-fullday-text));
   }
   .weekend-cell {
-    @apply bg-weekend text-weekend-text;
+    background-color: hsl(var(--weekend));
+    color: hsl(var(--weekend-text));
   }
   .week-band {
-    @apply bg-week-band text-week-band-text;
+    background-color: hsl(var(--week-band));
+    color: hsl(var(--week-band-text));
   }
   .total-row {
-    @apply bg-total-row text-total-row-text;
+    background-color: hsl(var(--total-row));
+    color: hsl(var(--total-row-text));
   }
 }
 
@@ -164,4 +170,65 @@
 
 ::-webkit-scrollbar-thumb:hover {
   background: hsl(var(--muted-foreground) / 0.5);
+}
+
+/* Print styles */
+@media print {
+  body {
+    background: white !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+
+  .print-container {
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  table {
+    font-size: 10px !important;
+    width: 100% !important;
+  }
+
+  th, td {
+    padding: 4px 6px !important;
+  }
+
+  .bg-primary {
+    background-color: hsl(207 60% 30%) !important;
+    color: white !important;
+  }
+
+  .bg-weekband {
+    background-color: hsl(220 50% 92%) !important;
+  }
+
+  .bg-shift-morning {
+    background-color: hsl(45 100% 70%) !important;
+  }
+
+  .bg-shift-afternoon, .bg-shift-fullday {
+    background-color: hsl(90 60% 55%) !important;
+  }
+
+  .bg-weekend {
+    background-color: hsl(0 0% 95%) !important;
+  }
+
+  .bg-total-row {
+    background-color: hsl(120 40% 92%) !important;
+  }
+
+  @page {
+    size: A4 landscape;
+    margin: 1cm;
+  }
 }

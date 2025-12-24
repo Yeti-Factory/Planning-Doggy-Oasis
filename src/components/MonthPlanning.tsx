@@ -1,4 +1,3 @@
-import { useRef, useState } from 'react';
 import { getDaysInMonth, getMonthName, groupDaysByWeek, getWeekNumber } from '@/lib/dateUtils';
 import { DayRow } from './DayRow';
 import { WeekSummary } from './WeekSummary';
@@ -10,6 +9,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from './ui/dropdown-menu';
+import { usePlanningStore } from '@/hooks/usePlanningStore';
 import logo from '@/assets/logo.png';
 
 interface MonthPlanningProps {
@@ -21,9 +21,16 @@ export function MonthPlanning({ year, month }: MonthPlanningProps) {
   const days = getDaysInMonth(year, month);
   const weekGroups = groupDaysByWeek(days);
   const sortedWeeks = Array.from(weekGroups.entries()).sort((a, b) => {
-    // Sort by first day of week to handle year boundaries
     return a[1][0].getTime() - b[1][0].getTime();
   });
+
+  const { assignments, people } = usePlanningStore();
+
+  const getPersonName = (personId: string | undefined) => {
+    if (!personId) return '';
+    const person = people.find(p => p.id === personId);
+    return person ? `[${person.code}] ${person.name}` : '';
+  };
 
   const handlePrint = (weekNumber?: number) => {
     const printWindow = window.open('', '_blank');
@@ -96,16 +103,18 @@ export function MonthPlanning({ year, month }: MonthPlanningProps) {
                 const dayNames = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
                 const dateStr = day.toLocaleDateString('fr-FR');
                 const key = day.toISOString().split('T')[0];
-                const assignments = JSON.parse(localStorage.getItem('planning-assignments') || '{}');
-                const dayAssignments = assignments[key] || {};
+                const dayAssignments = assignments[key] as { morning?: string; afternoon?: string; fullDay?: string } | undefined;
+                const morningName = getPersonName(dayAssignments?.morning);
+                const afternoonName = getPersonName(dayAssignments?.afternoon);
+                const fulldayName = getPersonName(dayAssignments?.fullDay);
                 return `
                   <tr class="${isWeekend ? 'weekend' : ''}">
                     <td>${dateStr}</td>
                     <td>${dayNames[day.getDay()]}</td>
                     <td style="text-align:center">${weekNum}</td>
-                    <td class="${dayAssignments.morning ? 'morning' : ''}" style="text-align:center">${dayAssignments.morning || ''}</td>
-                    <td class="${dayAssignments.afternoon ? 'afternoon' : ''}" style="text-align:center">${dayAssignments.afternoon || ''}</td>
-                    <td class="${dayAssignments.fullday ? 'fullday' : ''}" style="text-align:center">${dayAssignments.fullday || ''}</td>
+                    <td class="${morningName ? 'morning' : ''}" style="text-align:center">${morningName}</td>
+                    <td class="${afternoonName ? 'afternoon' : ''}" style="text-align:center">${afternoonName}</td>
+                    <td class="${fulldayName ? 'fullday' : ''}" style="text-align:center">${fulldayName}</td>
                   </tr>
                 `;
               }).join('')}

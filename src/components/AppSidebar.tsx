@@ -21,7 +21,7 @@ interface AppSidebarProps {
 export function AppSidebar({ currentView, onViewChange }: AppSidebarProps) {
   const currentYear = new Date().getFullYear();
   const [expandedYears, setExpandedYears] = useState<number[]>([2026, currentYear]);
-  const years = [2025, 2026, 2027];
+  const years = [2026, 2027, 2028];
 
   const toggleYear = (year: number) => {
     setExpandedYears((prev) =>

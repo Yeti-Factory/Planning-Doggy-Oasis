@@ -1,4 +1,4 @@
-import { BookOpen, CheckCircle, AlertTriangle, Info } from 'lucide-react';
+import { BookOpen, CheckCircle, AlertTriangle, Info, Printer } from 'lucide-react';
 
 export function UserGuide() {
   return (
@@ -135,6 +135,34 @@ export function UserGuide() {
             <li className="flex items-start gap-2">
               <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 shrink-0" />
               <span>Modifie les heures par défaut pour Matin (6h), Après-midi (6h), Journée (9h)</span>
+            </li>
+          </ul>
+        </div>
+
+        {/* Section 7 - Impression */}
+        <div className="p-5 rounded-lg bg-card border border-border">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="flex items-center justify-center w-7 h-7 rounded-full bg-primary text-primary-foreground font-bold text-sm">
+              7
+            </span>
+            <h2 className="text-lg font-semibold">Imprimer un planning</h2>
+          </div>
+          <ul className="space-y-2 text-muted-foreground ml-9">
+            <li className="flex items-start gap-2">
+              <Printer className="w-4 h-4 text-blue-500 mt-0.5 shrink-0" />
+              <span>Va sur le mois souhaité et clique sur le bouton <strong className="text-foreground">"Imprimer"</strong> en haut à droite</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 shrink-0" />
+              <span>Choisis <strong className="text-foreground">"Mois complet"</strong> pour imprimer tout le mois</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 shrink-0" />
+              <span>Ou choisis une <strong className="text-foreground">semaine spécifique</strong> (Semaine 1, 2, 3...)</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <Info className="w-4 h-4 text-blue-500 mt-0.5 shrink-0" />
+              <span>Le planning s'ouvre dans une nouvelle fenêtre, prêt à imprimer ou enregistrer en PDF</span>
             </li>
           </ul>
         </div>

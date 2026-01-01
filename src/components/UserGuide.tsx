@@ -1,4 +1,4 @@
-import { BookOpen, CheckCircle, AlertTriangle, Info, Printer } from 'lucide-react';
+import { BookOpen, CheckCircle, AlertTriangle, Info, Printer, Copy, ClipboardPaste, Trash2, Plus, Users } from 'lucide-react';
 
 export function UserGuide() {
   return (
@@ -59,11 +59,95 @@ export function UserGuide() {
           </ul>
         </div>
 
-        {/* Section 3 */}
+        {/* Section 3 - Multi-personnes */}
         <div className="p-5 rounded-lg bg-card border border-border">
           <div className="flex items-center gap-2 mb-3">
             <span className="flex items-center justify-center w-7 h-7 rounded-full bg-primary text-primary-foreground font-bold text-sm">
               3
+            </span>
+            <h2 className="text-lg font-semibold">Plusieurs personnes par créneau</h2>
+          </div>
+          <ul className="space-y-2 text-muted-foreground ml-9">
+            <li className="flex items-start gap-2">
+              <Users className="w-4 h-4 text-blue-500 mt-0.5 shrink-0" />
+              <span>Tu peux affecter <strong className="text-foreground">jusqu'à 6 personnes</strong> par créneau (Matin, Après-midi, Journée)</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <Plus className="w-4 h-4 text-green-500 mt-0.5 shrink-0" />
+              <span>Clique sur <strong className="text-foreground">"Ajouter"</strong> sous un créneau pour ajouter un sélecteur supplémentaire</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 shrink-0" />
+              <span>Clique sur <strong className="text-foreground">"Retirer"</strong> pour enlever un sélecteur vide</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <Info className="w-4 h-4 text-blue-500 mt-0.5 shrink-0" />
+              <span>Les heures sont calculées pour chaque personne individuellement</span>
+            </li>
+          </ul>
+        </div>
+
+        {/* Section 4 - Copier/Coller */}
+        <div className="p-5 rounded-lg bg-card border border-border">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="flex items-center justify-center w-7 h-7 rounded-full bg-primary text-primary-foreground font-bold text-sm">
+              4
+            </span>
+            <h2 className="text-lg font-semibold">Copier / Coller les affectations</h2>
+          </div>
+          <ul className="space-y-2 text-muted-foreground ml-9">
+            <li className="flex items-start gap-2">
+              <Copy className="w-4 h-4 text-blue-500 mt-0.5 shrink-0" />
+              <span><strong className="text-foreground">Copier une journée :</strong> Survole la date, clique sur l'icône <Copy className="w-3 h-3 inline" /></span>
+            </li>
+            <li className="flex items-start gap-2">
+              <ClipboardPaste className="w-4 h-4 text-green-500 mt-0.5 shrink-0" />
+              <span><strong className="text-foreground">Coller sur une journée :</strong> Survole une autre date, clique sur <ClipboardPaste className="w-3 h-3 inline" /></span>
+            </li>
+            <li className="flex items-start gap-2">
+              <Copy className="w-4 h-4 text-blue-500 mt-0.5 shrink-0" />
+              <span><strong className="text-foreground">Copier une semaine :</strong> Survole le bandeau "Semaine XX", clique sur "Copier"</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <ClipboardPaste className="w-4 h-4 text-green-500 mt-0.5 shrink-0" />
+              <span><strong className="text-foreground">Coller sur une semaine :</strong> Survole un autre bandeau, clique sur "Coller"</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <Info className="w-4 h-4 text-blue-500 mt-0.5 shrink-0" />
+              <span>Si tu copies une journée, tu peux la coller sur toute une semaine (elle sera appliquée à chaque jour)</span>
+            </li>
+          </ul>
+        </div>
+
+        {/* Section 5 - Effacer */}
+        <div className="p-5 rounded-lg bg-card border border-border">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="flex items-center justify-center w-7 h-7 rounded-full bg-primary text-primary-foreground font-bold text-sm">
+              5
+            </span>
+            <h2 className="text-lg font-semibold">Effacer des affectations</h2>
+          </div>
+          <ul className="space-y-2 text-muted-foreground ml-9">
+            <li className="flex items-start gap-2">
+              <Trash2 className="w-4 h-4 text-red-500 mt-0.5 shrink-0" />
+              <span><strong className="text-foreground">Effacer une journée :</strong> Survole la date, clique sur l'icône poubelle rouge <Trash2 className="w-3 h-3 inline text-red-500" /></span>
+            </li>
+            <li className="flex items-start gap-2">
+              <Trash2 className="w-4 h-4 text-red-500 mt-0.5 shrink-0" />
+              <span><strong className="text-foreground">Effacer une semaine :</strong> Survole le bandeau "Semaine XX", clique sur "Effacer"</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <AlertTriangle className="w-4 h-4 text-amber-600 mt-0.5 shrink-0" />
+              <span className="text-amber-700 dark:text-amber-300">Attention : l'effacement est immédiat, pas de confirmation !</span>
+            </li>
+          </ul>
+        </div>
+
+        {/* Section 6 */}
+        <div className="p-5 rounded-lg bg-card border border-border">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="flex items-center justify-center w-7 h-7 rounded-full bg-primary text-primary-foreground font-bold text-sm">
+              6
             </span>
             <h2 className="text-lg font-semibold">Règle anti-erreur</h2>
           </div>
@@ -77,13 +161,13 @@ export function UserGuide() {
           </div>
         </div>
 
-        {/* Section 4 */}
+        {/* Section 7 */}
         <div className="p-5 rounded-lg bg-card border border-border">
           <div className="flex items-center gap-2 mb-3">
             <span className="flex items-center justify-center w-7 h-7 rounded-full bg-primary text-primary-foreground font-bold text-sm">
-              4
+              7
             </span>
-            <h2 className="text-lg font-semibold">Semaines</h2>
+            <h2 className="text-lg font-semibold">Semaines et totaux</h2>
           </div>
           <ul className="space-y-2 text-muted-foreground ml-9">
             <li className="flex items-start gap-2">
@@ -101,11 +185,11 @@ export function UserGuide() {
           </ul>
         </div>
 
-        {/* Section 5 */}
+        {/* Section 8 */}
         <div className="p-5 rounded-lg bg-card border border-border">
           <div className="flex items-center gap-2 mb-3">
             <span className="flex items-center justify-center w-7 h-7 rounded-full bg-primary text-primary-foreground font-bold text-sm">
-              5
+              8
             </span>
             <h2 className="text-lg font-semibold">Week-end</h2>
           </div>
@@ -119,11 +203,11 @@ export function UserGuide() {
           </div>
         </div>
 
-        {/* Section 6 - Paramètres */}
+        {/* Section 9 - Paramètres */}
         <div className="p-5 rounded-lg bg-card border border-border">
           <div className="flex items-center gap-2 mb-3">
             <span className="flex items-center justify-center w-7 h-7 rounded-full bg-primary text-primary-foreground font-bold text-sm">
-              6
+              9
             </span>
             <h2 className="text-lg font-semibold">Paramètres des heures</h2>
           </div>
@@ -139,11 +223,11 @@ export function UserGuide() {
           </ul>
         </div>
 
-        {/* Section 7 - Impression */}
+        {/* Section 10 - Impression */}
         <div className="p-5 rounded-lg bg-card border border-border">
           <div className="flex items-center gap-2 mb-3">
             <span className="flex items-center justify-center w-7 h-7 rounded-full bg-primary text-primary-foreground font-bold text-sm">
-              7
+              10
             </span>
             <h2 className="text-lg font-semibold">Imprimer un planning</h2>
           </div>
@@ -163,6 +247,10 @@ export function UserGuide() {
             <li className="flex items-start gap-2">
               <Info className="w-4 h-4 text-blue-500 mt-0.5 shrink-0" />
               <span>Le planning s'ouvre dans une nouvelle fenêtre, prêt à imprimer ou enregistrer en PDF</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <Info className="w-4 h-4 text-blue-500 mt-0.5 shrink-0" />
+              <span>Toutes les personnes affectées à un créneau sont listées, séparées par des virgules</span>
             </li>
           </ul>
         </div>

@@ -1,18 +1,19 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { usePlanningStore } from '@/hooks/usePlanningStore';
 import { formatDate, formatDateKey, getDayName, isWeekend, getWeekNumber } from '@/lib/dateUtils';
 import { PersonSelect } from './PersonSelect';
 import { cn } from '@/lib/utils';
 import { MAX_PEOPLE_PER_SLOT } from '@/types/planning';
 import { Button } from './ui/button';
-import { Plus, Minus } from 'lucide-react';
+import { Plus, Minus, Copy, ClipboardPaste } from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
 
 interface DayRowProps {
   date: Date;
 }
 
 export function DayRow({ date }: DayRowProps) {
-  const { getAssignment, setAssignment } = usePlanningStore();
+  const { getAssignment, setAssignment, copyDay, pasteToDay, clipboard } = usePlanningStore();
   const dateKey = formatDateKey(date);
   const assignment = getAssignment(dateKey);
   const weekend = isWeekend(date);
@@ -33,6 +34,15 @@ export function DayRow({ date }: DayRowProps) {
     afternoon: getInitialVisibleCount(afternoon),
     fullDay: getInitialVisibleCount(fullDay),
   });
+
+  // Update visible counts when assignment changes (e.g., after paste)
+  useEffect(() => {
+    setVisibleCounts({
+      morning: getInitialVisibleCount(morning),
+      afternoon: getInitialVisibleCount(afternoon),
+      fullDay: getInitialVisibleCount(fullDay),
+    });
+  }, [assignment]);
 
   // Get all assigned IDs for a day (to prevent duplicates)
   const getAllAssignedIds = (excludeSlot: 'morning' | 'afternoon' | 'fullDay', excludeIndex: number) => {
@@ -65,6 +75,24 @@ export function DayRow({ date }: DayRowProps) {
       setVisibleCounts(prev => ({ ...prev, [slot]: prev[slot] - 1 }));
     }
   };
+
+  const handleCopyDay = () => {
+    copyDay(dateKey);
+    toast({
+      title: "Journée copiée",
+      description: `Les affectations du ${formatDate(date)} ont été copiées.`,
+    });
+  };
+
+  const handlePasteDay = () => {
+    pasteToDay(dateKey);
+    toast({
+      title: "Journée collée",
+      description: `Les affectations ont été collées sur le ${formatDate(date)}.`,
+    });
+  };
+
+  const canPaste = clipboard?.type === 'day';
 
   const renderSlotSelects = (
     slotType: 'morning' | 'afternoon' | 'fullDay',
@@ -116,11 +144,35 @@ export function DayRow({ date }: DayRowProps) {
 
   return (
     <tr className={cn(
-      'transition-colors hover:bg-accent/50',
+      'transition-colors hover:bg-accent/50 group',
       weekend && 'bg-weekend'
     )}>
       <td className="px-3 py-2 text-sm font-medium border-r border-border align-top">
-        {formatDate(date)}
+        <div className="flex items-center gap-1">
+          <span>{formatDate(date)}</span>
+          <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-0.5 ml-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 w-6 p-0"
+              onClick={handleCopyDay}
+              title="Copier cette journée"
+            >
+              <Copy className="w-3 h-3" />
+            </Button>
+            {canPaste && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 w-6 p-0"
+                onClick={handlePasteDay}
+                title="Coller sur cette journée"
+              >
+                <ClipboardPaste className="w-3 h-3" />
+              </Button>
+            )}
+          </div>
+        </div>
       </td>
       <td className={cn(
         'px-3 py-2 text-sm border-r border-border align-top',

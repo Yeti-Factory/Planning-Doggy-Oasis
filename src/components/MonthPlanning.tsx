@@ -1,7 +1,7 @@
-import { getDaysInMonth, getMonthName, groupDaysByWeek, getWeekNumber } from '@/lib/dateUtils';
+import { getDaysInMonth, getMonthName, groupDaysByWeek, getWeekNumber, formatDateKey } from '@/lib/dateUtils';
 import { DayRow } from './DayRow';
 import { WeekSummary } from './WeekSummary';
-import { Calendar, Printer } from 'lucide-react';
+import { Calendar, Printer, Copy, ClipboardPaste } from 'lucide-react';
 import { Button } from './ui/button';
 import {
   DropdownMenu,
@@ -10,6 +10,7 @@ import {
   DropdownMenuTrigger,
 } from './ui/dropdown-menu';
 import { usePlanningStore } from '@/hooks/usePlanningStore';
+import { toast } from '@/hooks/use-toast';
 import logo from '@/assets/logo.png';
 
 interface MonthPlanningProps {
@@ -24,7 +25,7 @@ export function MonthPlanning({ year, month }: MonthPlanningProps) {
     return a[1][0].getTime() - b[1][0].getTime();
   });
 
-  const { assignments, people } = usePlanningStore();
+  const { assignments, people, copyWeek, pasteToWeek, clipboard } = usePlanningStore();
 
   const getPersonName = (personId: string | undefined) => {
     if (!personId) return '';
@@ -39,6 +40,26 @@ export function MonthPlanning({ year, month }: MonthPlanningProps) {
       .map(id => getPersonName(id))
       .join(', ');
   };
+
+  const handleCopyWeek = (weekNum: number, weekDays: Date[]) => {
+    const dateKeys = weekDays.map(d => formatDateKey(d));
+    copyWeek(dateKeys);
+    toast({
+      title: "Semaine copiée",
+      description: `Les affectations de la semaine ${weekNum} ont été copiées.`,
+    });
+  };
+
+  const handlePasteWeek = (weekNum: number, weekDays: Date[]) => {
+    const dateKeys = weekDays.map(d => formatDateKey(d));
+    pasteToWeek(dateKeys);
+    toast({
+      title: "Semaine collée",
+      description: `Les affectations ont été collées sur la semaine ${weekNum}.`,
+    });
+  };
+
+  const canPasteWeek = clipboard !== null;
 
   const handlePrint = (weekNumber?: number) => {
     const printWindow = window.open('', '_blank');
@@ -208,9 +229,35 @@ export function MonthPlanning({ year, month }: MonthPlanningProps) {
             {sortedWeeks.map(([weekNum, weekDays]) => (
               <>
                 {/* Week band */}
-                <tr key={`week-band-${weekNum}`} className="bg-weekband border-y-2 border-primary">
+                <tr key={`week-band-${weekNum}`} className="bg-weekband border-y-2 border-primary group">
                   <td colSpan={6} className="px-3 py-2 font-semibold text-weekband-text">
-                    Semaine {weekNum}
+                    <div className="flex items-center justify-between">
+                      <span>Semaine {weekNum}</span>
+                      <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 px-2 text-xs bg-background/50 hover:bg-background"
+                          onClick={() => handleCopyWeek(weekNum, weekDays)}
+                          title="Copier cette semaine"
+                        >
+                          <Copy className="w-3 h-3 mr-1" />
+                          Copier
+                        </Button>
+                        {canPasteWeek && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 px-2 text-xs bg-background/50 hover:bg-background"
+                            onClick={() => handlePasteWeek(weekNum, weekDays)}
+                            title="Coller sur cette semaine"
+                          >
+                            <ClipboardPaste className="w-3 h-3 mr-1" />
+                            Coller
+                          </Button>
+                        )}
+                      </div>
+                    </div>
                   </td>
                 </tr>
 

@@ -32,6 +32,14 @@ export function MonthPlanning({ year, month }: MonthPlanningProps) {
     return person ? `[${person.code}] ${person.name}` : '';
   };
 
+  const getSlotNames = (slotIds: (string | undefined)[] | undefined): string => {
+    if (!slotIds) return '';
+    return slotIds
+      .filter(Boolean)
+      .map(id => getPersonName(id))
+      .join(', ');
+  };
+
   const handlePrint = (weekNumber?: number) => {
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
@@ -57,7 +65,7 @@ export function MonthPlanning({ year, month }: MonthPlanningProps) {
           table { width: 100%; border-collapse: collapse; font-size: 11px; }
           th { background: #1f4e79; color: white; padding: 8px; text-align: center; }
           th:first-child, th:nth-child(2) { text-align: left; }
-          td { border: 1px solid #ccc; padding: 6px 8px; }
+          td { border: 1px solid #ccc; padding: 6px 8px; vertical-align: top; }
           .week-band { background: #d9e1f2; font-weight: bold; }
           .weekend { background: #f2f2f2; }
           .morning { background: #ffd966; }
@@ -103,18 +111,18 @@ export function MonthPlanning({ year, month }: MonthPlanningProps) {
                 const dayNames = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
                 const dateStr = day.toLocaleDateString('fr-FR');
                 const key = day.toISOString().split('T')[0];
-                const dayAssignments = assignments[key] as { morning?: string; afternoon?: string; fullDay?: string } | undefined;
-                const morningName = getPersonName(dayAssignments?.morning);
-                const afternoonName = getPersonName(dayAssignments?.afternoon);
-                const fulldayName = getPersonName(dayAssignments?.fullDay);
+                const dayAssignments = assignments[key];
+                const morningNames = getSlotNames(dayAssignments?.morning);
+                const afternoonNames = getSlotNames(dayAssignments?.afternoon);
+                const fulldayNames = getSlotNames(dayAssignments?.fullDay);
                 return `
                   <tr class="${isWeekend ? 'weekend' : ''}">
                     <td>${dateStr}</td>
                     <td>${dayNames[day.getDay()]}</td>
                     <td style="text-align:center">${weekNum}</td>
-                    <td class="${morningName ? 'morning' : ''}" style="text-align:center">${morningName}</td>
-                    <td class="${afternoonName ? 'afternoon' : ''}" style="text-align:center">${afternoonName}</td>
-                    <td class="${fulldayName ? 'fullday' : ''}" style="text-align:center">${fulldayName}</td>
+                    <td class="${morningNames ? 'morning' : ''}" style="text-align:center">${morningNames}</td>
+                    <td class="${afternoonNames ? 'afternoon' : ''}" style="text-align:center">${afternoonNames}</td>
+                    <td class="${fulldayNames ? 'fullday' : ''}" style="text-align:center">${fulldayNames}</td>
                   </tr>
                 `;
               }).join('')}
@@ -191,9 +199,9 @@ export function MonthPlanning({ year, month }: MonthPlanningProps) {
               <th className="px-3 py-3 text-left text-sm font-semibold w-28">Date</th>
               <th className="px-3 py-3 text-left text-sm font-semibold w-28">Jour</th>
               <th className="px-3 py-3 text-center text-sm font-semibold w-20">Semaine</th>
-              <th className="px-3 py-3 text-center text-sm font-semibold w-44">Matin</th>
-              <th className="px-3 py-3 text-center text-sm font-semibold w-44">Après-midi</th>
-              <th className="px-3 py-3 text-center text-sm font-semibold w-44">Journée</th>
+              <th className="px-3 py-3 text-center text-sm font-semibold min-w-[180px]">Matin</th>
+              <th className="px-3 py-3 text-center text-sm font-semibold min-w-[180px]">Après-midi</th>
+              <th className="px-3 py-3 text-center text-sm font-semibold min-w-[180px]">Journée</th>
             </tr>
           </thead>
           <tbody>

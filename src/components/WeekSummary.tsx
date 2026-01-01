@@ -24,9 +24,16 @@ export function WeekSummary({ weekNumber, days }: WeekSummaryProps) {
     for (const day of days) {
       const key = formatDateKey(day);
       const assignment = assignments[key];
-      if (assignment?.morning) total += settings.hoursForMorning;
-      if (assignment?.afternoon) total += settings.hoursForAfternoon;
-      if (assignment?.fullDay) total += settings.hoursForFullDay;
+      if (assignment) {
+        // Count each person assigned
+        const morningCount = (assignment.morning || []).filter(Boolean).length;
+        const afternoonCount = (assignment.afternoon || []).filter(Boolean).length;
+        const fullDayCount = (assignment.fullDay || []).filter(Boolean).length;
+        
+        total += morningCount * settings.hoursForMorning;
+        total += afternoonCount * settings.hoursForAfternoon;
+        total += fullDayCount * settings.hoursForFullDay;
+      }
     }
     return total;
   };
@@ -38,9 +45,11 @@ export function WeekSummary({ weekNumber, days }: WeekSummaryProps) {
     for (const day of days) {
       const key = formatDateKey(day);
       const assignment = assignments[key];
-      if (assignment?.morning === personId) total += settings.hoursForMorning;
-      if (assignment?.afternoon === personId) total += settings.hoursForAfternoon;
-      if (assignment?.fullDay === personId) total += settings.hoursForFullDay;
+      if (assignment) {
+        if ((assignment.morning || []).includes(personId)) total += settings.hoursForMorning;
+        if ((assignment.afternoon || []).includes(personId)) total += settings.hoursForAfternoon;
+        if ((assignment.fullDay || []).includes(personId)) total += settings.hoursForFullDay;
+      }
     }
     return total > 0 ? `${total}h` : '0h';
   };

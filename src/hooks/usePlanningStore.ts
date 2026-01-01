@@ -1,12 +1,12 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { Person, DayAssignment, Settings, PlanningState, CODE_MAP, Category, CategoryCode } from '@/types/planning';
+import { Person, DayAssignment, Settings, PlanningState, CODE_MAP, Category, MAX_PEOPLE_PER_SLOT } from '@/types/planning';
 
 interface PlanningStore extends PlanningState {
   addPerson: (name: string, category: Category) => void;
   updatePerson: (id: string, name: string, category: Category) => void;
   removePerson: (id: string) => void;
-  setAssignment: (date: string, slot: 'morning' | 'afternoon' | 'fullDay', personId: string | undefined) => void;
+  setAssignment: (date: string, slot: 'morning' | 'afternoon' | 'fullDay', index: number, personId: string | undefined) => void;
   updateSettings: (settings: Partial<Settings>) => void;
   getPersonById: (id: string) => Person | undefined;
   getAssignment: (date: string) => DayAssignment | undefined;
@@ -25,6 +25,13 @@ const DEFAULT_SETTINGS: Settings = {
   hoursForMorning: 6,
   hoursForAfternoon: 6,
   hoursForFullDay: 9,
+};
+
+const createEmptySlots = (): (string | undefined)[] => Array(MAX_PEOPLE_PER_SLOT).fill(undefined);
+
+const removePersonFromSlots = (slots: (string | undefined)[] | undefined, personId: string): (string | undefined)[] => {
+  if (!slots) return createEmptySlots();
+  return slots.map(id => id === personId ? undefined : id);
 };
 
 export const usePlanningStore = create<PlanningStore>()(
@@ -63,24 +70,33 @@ export const usePlanningStore = create<PlanningStore>()(
               date,
               {
                 ...assignment,
-                morning: assignment.morning === id ? undefined : assignment.morning,
-                afternoon: assignment.afternoon === id ? undefined : assignment.afternoon,
-                fullDay: assignment.fullDay === id ? undefined : assignment.fullDay,
+                morning: removePersonFromSlots(assignment.morning, id),
+                afternoon: removePersonFromSlots(assignment.afternoon, id),
+                fullDay: removePersonFromSlots(assignment.fullDay, id),
               },
             ])
           ),
         }));
       },
 
-      setAssignment: (date: string, slot: 'morning' | 'afternoon' | 'fullDay', personId: string | undefined) => {
+      setAssignment: (date: string, slot: 'morning' | 'afternoon' | 'fullDay', index: number, personId: string | undefined) => {
         set((state) => {
-          const current = state.assignments[date] || { date };
+          const current = state.assignments[date] || { 
+            date, 
+            morning: createEmptySlots(), 
+            afternoon: createEmptySlots(), 
+            fullDay: createEmptySlots() 
+          };
+          const currentSlot = current[slot] || createEmptySlots();
+          const newSlot = [...currentSlot];
+          newSlot[index] = personId;
+          
           return {
             assignments: {
               ...state.assignments,
               [date]: {
                 ...current,
-                [slot]: personId,
+                [slot]: newSlot,
               },
             },
           };

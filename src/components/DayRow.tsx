@@ -5,7 +5,7 @@ import { PersonSelect } from './PersonSelect';
 import { cn } from '@/lib/utils';
 import { MAX_PEOPLE_PER_SLOT } from '@/types/planning';
 import { Button } from './ui/button';
-import { Plus, Minus, Copy, ClipboardPaste } from 'lucide-react';
+import { Plus, Minus, Copy, ClipboardPaste, Trash2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
 interface DayRowProps {
@@ -13,7 +13,7 @@ interface DayRowProps {
 }
 
 export function DayRow({ date }: DayRowProps) {
-  const { getAssignment, setAssignment, copyDay, pasteToDay, clipboard } = usePlanningStore();
+  const { getAssignment, setAssignment, copyDay, pasteToDay, clearDay, clipboard } = usePlanningStore();
   const dateKey = formatDateKey(date);
   const assignment = getAssignment(dateKey);
   const weekend = isWeekend(date);
@@ -92,7 +92,16 @@ export function DayRow({ date }: DayRowProps) {
     });
   };
 
+  const handleClearDay = () => {
+    clearDay(dateKey);
+    toast({
+      title: "Journée effacée",
+      description: `Les affectations du ${formatDate(date)} ont été effacées.`,
+    });
+  };
+
   const canPaste = clipboard?.type === 'day';
+  const hasAssignments = morning.some(Boolean) || afternoon.some(Boolean) || fullDay.some(Boolean);
 
   const renderSlotSelects = (
     slotType: 'morning' | 'afternoon' | 'fullDay',
@@ -169,6 +178,17 @@ export function DayRow({ date }: DayRowProps) {
                 title="Coller sur cette journée"
               >
                 <ClipboardPaste className="w-3 h-3" />
+              </Button>
+            )}
+            {hasAssignments && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 w-6 p-0 text-destructive hover:text-destructive"
+                onClick={handleClearDay}
+                title="Effacer cette journée"
+              >
+                <Trash2 className="w-3 h-3" />
               </Button>
             )}
           </div>

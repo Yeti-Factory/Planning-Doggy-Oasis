@@ -22,6 +22,8 @@ interface PlanningStore extends PlanningState {
   pasteToDay: (date: string) => void;
   pasteToWeek: (dates: string[]) => void;
   clearClipboard: () => void;
+  clearDay: (date: string) => void;
+  clearWeek: (dates: string[]) => void;
 }
 
 const DEFAULT_PEOPLE: Person[] = [
@@ -245,6 +247,35 @@ export const usePlanningStore = create<PlanningStore>()(
 
       clearClipboard: () => {
         set({ clipboard: null });
+      },
+
+      clearDay: (date: string) => {
+        set((state) => ({
+          assignments: {
+            ...state.assignments,
+            [date]: {
+              date,
+              morning: createEmptySlots(),
+              afternoon: createEmptySlots(),
+              fullDay: createEmptySlots(),
+            },
+          },
+        }));
+      },
+
+      clearWeek: (dates: string[]) => {
+        set((state) => {
+          const newAssignments = { ...state.assignments };
+          dates.forEach((date) => {
+            newAssignments[date] = {
+              date,
+              morning: createEmptySlots(),
+              afternoon: createEmptySlots(),
+              fullDay: createEmptySlots(),
+            };
+          });
+          return { assignments: newAssignments };
+        });
       },
     }),
     {

@@ -1,7 +1,7 @@
 import { getDaysInMonth, getMonthName, groupDaysByWeek, getWeekNumber, formatDateKey } from '@/lib/dateUtils';
 import { DayRow } from './DayRow';
 import { WeekSummary } from './WeekSummary';
-import { Calendar, Printer, Copy, ClipboardPaste } from 'lucide-react';
+import { Calendar, Printer, Copy, ClipboardPaste, Trash2 } from 'lucide-react';
 import { Button } from './ui/button';
 import {
   DropdownMenu,
@@ -25,7 +25,7 @@ export function MonthPlanning({ year, month }: MonthPlanningProps) {
     return a[1][0].getTime() - b[1][0].getTime();
   });
 
-  const { assignments, people, copyWeek, pasteToWeek, clipboard } = usePlanningStore();
+  const { assignments, people, copyWeek, pasteToWeek, clearWeek, clipboard } = usePlanningStore();
 
   const getPersonName = (personId: string | undefined) => {
     if (!personId) return '';
@@ -59,7 +59,29 @@ export function MonthPlanning({ year, month }: MonthPlanningProps) {
     });
   };
 
+  const handleClearWeek = (weekNum: number, weekDays: Date[]) => {
+    const dateKeys = weekDays.map(d => formatDateKey(d));
+    clearWeek(dateKeys);
+    toast({
+      title: "Semaine effacée",
+      description: `Les affectations de la semaine ${weekNum} ont été effacées.`,
+    });
+  };
+
   const canPasteWeek = clipboard !== null;
+
+  const weekHasAssignments = (weekDays: Date[]) => {
+    return weekDays.some(day => {
+      const key = formatDateKey(day);
+      const assignment = assignments[key];
+      if (!assignment) return false;
+      return (
+        (assignment.morning || []).some(Boolean) ||
+        (assignment.afternoon || []).some(Boolean) ||
+        (assignment.fullDay || []).some(Boolean)
+      );
+    });
+  };
 
   const handlePrint = (weekNumber?: number) => {
     const printWindow = window.open('', '_blank');
@@ -254,6 +276,18 @@ export function MonthPlanning({ year, month }: MonthPlanningProps) {
                           >
                             <ClipboardPaste className="w-3 h-3 mr-1" />
                             Coller
+                          </Button>
+                        )}
+                        {weekHasAssignments(weekDays) && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 px-2 text-xs bg-background/50 hover:bg-background text-destructive hover:text-destructive"
+                            onClick={() => handleClearWeek(weekNum, weekDays)}
+                            title="Effacer cette semaine"
+                          >
+                            <Trash2 className="w-3 h-3 mr-1" />
+                            Effacer
                           </Button>
                         )}
                       </div>

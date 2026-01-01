@@ -2,6 +2,7 @@ import { usePlanningStore } from '@/hooks/usePlanningStore';
 import { formatDate, formatDateKey, getDayName, isWeekend, getWeekNumber } from '@/lib/dateUtils';
 import { PersonSelect } from './PersonSelect';
 import { cn } from '@/lib/utils';
+import { MAX_PEOPLE_PER_SLOT } from '@/types/planning';
 
 interface DayRowProps {
   date: Date;
@@ -14,17 +15,43 @@ export function DayRow({ date }: DayRowProps) {
   const weekend = isWeekend(date);
   const weekNum = getWeekNumber(date);
 
-  const morning = assignment?.morning;
-  const afternoon = assignment?.afternoon;
-  const fullDay = assignment?.fullDay;
+  const morning = assignment?.morning || [];
+  const afternoon = assignment?.afternoon || [];
+  const fullDay = assignment?.fullDay || [];
 
-  // Get disabled IDs for duplicate prevention
-  const getDisabledIds = (currentSlot: 'morning' | 'afternoon' | 'fullDay') => {
+  // Get all assigned IDs for a day (to prevent duplicates)
+  const getAllAssignedIds = (excludeSlot: 'morning' | 'afternoon' | 'fullDay', excludeIndex: number) => {
     const ids: string[] = [];
-    if (currentSlot !== 'morning' && morning) ids.push(morning);
-    if (currentSlot !== 'afternoon' && afternoon) ids.push(afternoon);
-    if (currentSlot !== 'fullDay' && fullDay) ids.push(fullDay);
+    
+    const slots = { morning, afternoon, fullDay };
+    for (const [slotName, slotValues] of Object.entries(slots)) {
+      slotValues.forEach((id, idx) => {
+        if (id && !(slotName === excludeSlot && idx === excludeIndex)) {
+          ids.push(id);
+        }
+      });
+    }
+    
     return ids;
+  };
+
+  const renderSlotSelects = (
+    slotType: 'morning' | 'afternoon' | 'fullDay',
+    values: (string | undefined)[]
+  ) => {
+    return (
+      <div className="flex flex-col gap-1">
+        {Array.from({ length: MAX_PEOPLE_PER_SLOT }).map((_, index) => (
+          <PersonSelect
+            key={index}
+            value={values[index]}
+            onChange={(v) => setAssignment(dateKey, slotType, index, v)}
+            disabledIds={getAllAssignedIds(slotType, index)}
+            slotType={slotType}
+          />
+        ))}
+      </div>
+    );
   };
 
   return (
@@ -32,41 +59,26 @@ export function DayRow({ date }: DayRowProps) {
       'transition-colors hover:bg-accent/50',
       weekend && 'bg-weekend'
     )}>
-      <td className="px-3 py-2 text-sm font-medium border-r border-border">
+      <td className="px-3 py-2 text-sm font-medium border-r border-border align-top">
         {formatDate(date)}
       </td>
       <td className={cn(
-        'px-3 py-2 text-sm border-r border-border',
+        'px-3 py-2 text-sm border-r border-border align-top',
         weekend && 'text-weekend-text'
       )}>
         {getDayName(date)}
       </td>
-      <td className="px-3 py-2 text-sm text-center border-r border-border font-medium text-muted-foreground">
+      <td className="px-3 py-2 text-sm text-center border-r border-border font-medium text-muted-foreground align-top">
         {weekNum}
       </td>
-      <td className="px-2 py-1.5 border-r border-border">
-        <PersonSelect
-          value={morning}
-          onChange={(v) => setAssignment(dateKey, 'morning', v)}
-          disabledIds={getDisabledIds('morning')}
-          slotType="morning"
-        />
+      <td className="px-2 py-1.5 border-r border-border align-top">
+        {renderSlotSelects('morning', morning)}
       </td>
-      <td className="px-2 py-1.5 border-r border-border">
-        <PersonSelect
-          value={afternoon}
-          onChange={(v) => setAssignment(dateKey, 'afternoon', v)}
-          disabledIds={getDisabledIds('afternoon')}
-          slotType="afternoon"
-        />
+      <td className="px-2 py-1.5 border-r border-border align-top">
+        {renderSlotSelects('afternoon', afternoon)}
       </td>
-      <td className="px-2 py-1.5">
-        <PersonSelect
-          value={fullDay}
-          onChange={(v) => setAssignment(dateKey, 'fullDay', v)}
-          disabledIds={getDisabledIds('fullDay')}
-          slotType="fullDay"
-        />
+      <td className="px-2 py-1.5 align-top">
+        {renderSlotSelects('fullDay', fullDay)}
       </td>
     </tr>
   );

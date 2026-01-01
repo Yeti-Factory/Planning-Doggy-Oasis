@@ -10,10 +10,12 @@ export interface Person {
 
 export interface DayAssignment {
   date: string; // YYYY-MM-DD
-  morning?: string; // person id
-  afternoon?: string; // person id
-  fullDay?: string; // person id
+  morning: (string | undefined)[]; // up to 6 person ids
+  afternoon: (string | undefined)[]; // up to 6 person ids
+  fullDay: (string | undefined)[]; // up to 6 person ids
 }
+
+export const MAX_PEOPLE_PER_SLOT = 6;
 
 export interface Settings {
   hoursForMorning: number;

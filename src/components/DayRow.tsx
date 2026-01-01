@@ -1,8 +1,11 @@
+import { useState } from 'react';
 import { usePlanningStore } from '@/hooks/usePlanningStore';
 import { formatDate, formatDateKey, getDayName, isWeekend, getWeekNumber } from '@/lib/dateUtils';
 import { PersonSelect } from './PersonSelect';
 import { cn } from '@/lib/utils';
 import { MAX_PEOPLE_PER_SLOT } from '@/types/planning';
+import { Button } from './ui/button';
+import { Plus, Minus } from 'lucide-react';
 
 interface DayRowProps {
   date: Date;
@@ -18,6 +21,18 @@ export function DayRow({ date }: DayRowProps) {
   const morning = assignment?.morning || [];
   const afternoon = assignment?.afternoon || [];
   const fullDay = assignment?.fullDay || [];
+
+  // Track how many selectors are visible for each slot
+  const getInitialVisibleCount = (values: (string | undefined)[]) => {
+    const filledCount = values.filter(Boolean).length;
+    return Math.max(1, filledCount);
+  };
+
+  const [visibleCounts, setVisibleCounts] = useState({
+    morning: getInitialVisibleCount(morning),
+    afternoon: getInitialVisibleCount(afternoon),
+    fullDay: getInitialVisibleCount(fullDay),
+  });
 
   // Get all assigned IDs for a day (to prevent duplicates)
   const getAllAssignedIds = (excludeSlot: 'morning' | 'afternoon' | 'fullDay', excludeIndex: number) => {
@@ -35,13 +50,34 @@ export function DayRow({ date }: DayRowProps) {
     return ids;
   };
 
+  const addSelector = (slot: 'morning' | 'afternoon' | 'fullDay') => {
+    if (visibleCounts[slot] < MAX_PEOPLE_PER_SLOT) {
+      setVisibleCounts(prev => ({ ...prev, [slot]: prev[slot] + 1 }));
+    }
+  };
+
+  const removeSelector = (slot: 'morning' | 'afternoon' | 'fullDay') => {
+    const slotValues = slot === 'morning' ? morning : slot === 'afternoon' ? afternoon : fullDay;
+    const filledCount = slotValues.filter(Boolean).length;
+    const minVisible = Math.max(1, filledCount);
+    
+    if (visibleCounts[slot] > minVisible) {
+      setVisibleCounts(prev => ({ ...prev, [slot]: prev[slot] - 1 }));
+    }
+  };
+
   const renderSlotSelects = (
     slotType: 'morning' | 'afternoon' | 'fullDay',
     values: (string | undefined)[]
   ) => {
+    const visibleCount = visibleCounts[slotType];
+    const canAdd = visibleCount < MAX_PEOPLE_PER_SLOT;
+    const filledCount = values.filter(Boolean).length;
+    const canRemove = visibleCount > Math.max(1, filledCount);
+
     return (
       <div className="flex flex-col gap-1">
-        {Array.from({ length: MAX_PEOPLE_PER_SLOT }).map((_, index) => (
+        {Array.from({ length: visibleCount }).map((_, index) => (
           <PersonSelect
             key={index}
             value={values[index]}
@@ -50,6 +86,30 @@ export function DayRow({ date }: DayRowProps) {
             slotType={slotType}
           />
         ))}
+        <div className="flex gap-1 mt-0.5">
+          {canAdd && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
+              onClick={() => addSelector(slotType)}
+            >
+              <Plus className="w-3 h-3 mr-1" />
+              Ajouter
+            </Button>
+          )}
+          {canRemove && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
+              onClick={() => removeSelector(slotType)}
+            >
+              <Minus className="w-3 h-3 mr-1" />
+              Retirer
+            </Button>
+          )}
+        </div>
       </div>
     );
   };

@@ -48,6 +48,31 @@ const removePersonFromSlots = (slots: (string | undefined)[] | undefined, person
   return slots.map(id => id === personId ? undefined : id);
 };
 
+// Migration function to convert old format (single string) to new format (array)
+const migrateSlot = (slot: string | (string | undefined)[] | undefined): (string | undefined)[] => {
+  if (!slot) return createEmptySlots();
+  if (Array.isArray(slot)) return slot;
+  // Old format: single string - convert to array
+  const newSlot = createEmptySlots();
+  newSlot[0] = slot;
+  return newSlot;
+};
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const migrateAssignments = (assignments: Record<string, any>): Record<string, DayAssignment> => {
+  const migrated: Record<string, DayAssignment> = {};
+  for (const [date, assignment] of Object.entries(assignments)) {
+    if (!assignment) continue;
+    migrated[date] = {
+      date: assignment.date || date,
+      morning: migrateSlot(assignment.morning),
+      afternoon: migrateSlot(assignment.afternoon),
+      fullDay: migrateSlot(assignment.fullDay),
+    };
+  }
+  return migrated;
+};
+
 export const usePlanningStore = create<PlanningStore>()(
   persist(
     (set, get) => ({
@@ -280,12 +305,24 @@ export const usePlanningStore = create<PlanningStore>()(
     }),
     {
       name: 'planning-storage',
+      version: 2, // Increment version to trigger migration
       partialize: (state) => ({
         people: state.people,
         assignments: state.assignments,
         settings: state.settings,
         // Don't persist clipboard
       }),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      migrate: (persistedState: any, version: number) => {
+        if (version < 2) {
+          // Migrate from old format (single person) to new format (array)
+          return {
+            ...persistedState,
+            assignments: migrateAssignments(persistedState.assignments || {}),
+          };
+        }
+        return persistedState;
+      },
     }
   )
 );

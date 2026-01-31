@@ -36,6 +36,8 @@ import {
 } from '@/lib/weekUtils';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { formatDateKey } from '@/lib/dateUtils';
+import { Person } from '@/types/planning';
 
 interface WeeklyTaskPlannerProps {
   initialWeekStart?: string;
@@ -47,13 +49,55 @@ export function WeeklyTaskPlanner({ initialWeekStart }: WeeklyTaskPlannerProps) 
   );
   const [copiedWeek, setCopiedWeek] = useState<string | null>(null);
 
-  const { people } = usePlanningStore();
+  const { people, getAssignment, getPersonById } = usePlanningStore();
   const { setTaskAssignment, getTaskAssignment, clearWeekTasks, copyWeekTasks } = useWeeklyTasksStore();
 
   const weekDates = useMemo(() => {
     const start = new Date(weekStartDate);
     return Array.from({ length: 7 }, (_, i) => addDays(start, i));
   }, [weekStartDate]);
+
+  // Get people assigned to a specific period on a specific day
+  const getAssignedPeople = (dayIndex: number, period: 'morning' | 'afternoon'): Person[] => {
+    const date = weekDates[dayIndex];
+    const dateKey = formatDateKey(date);
+    const assignment = getAssignment(dateKey);
+    
+    if (!assignment) return [];
+    
+    const assignedIds = new Set<string>();
+    
+    // Get people from the specific period slot
+    const periodSlot = period === 'morning' ? assignment.morning : assignment.afternoon;
+    periodSlot?.forEach(id => {
+      if (id) assignedIds.add(id);
+    });
+    
+    // Also include people assigned to fullDay (they work both periods)
+    assignment.fullDay?.forEach(id => {
+      if (id) assignedIds.add(id);
+    });
+    
+    // Convert IDs to Person objects
+    return Array.from(assignedIds)
+      .map(id => getPersonById(id))
+      .filter((p): p is Person => p !== undefined);
+  };
+
+  // Get all unique people assigned during the week for a period
+  const getWeekAssignedPeople = (period: 'morning' | 'afternoon'): Person[] => {
+    const allAssignedIds = new Set<string>();
+    
+    weekDates.forEach((_, dayIndex) => {
+      const assigned = getAssignedPeople(dayIndex, period);
+      assigned.forEach(person => allAssignedIds.add(person.id));
+    });
+    
+    return Array.from(allAssignedIds)
+      .map(id => getPersonById(id))
+      .filter((p): p is Person => p !== undefined)
+      .sort((a, b) => a.name.localeCompare(b.name));
+  };
 
   const handlePreviousWeek = () => {
     setWeekStartDate(getPreviousWeekStart(weekStartDate));
@@ -98,91 +142,121 @@ export function WeeklyTaskPlanner({ initialWeekStart }: WeeklyTaskPlannerProps) 
     return assignment?.tasks || '';
   };
 
-  const renderTaskTable = (period: 'morning' | 'afternoon', title: string) => (
-    <div className="print-page mb-6">
-      <Card className="print:shadow-none print:border-none">
-        <CardHeader className="pb-3 print:pb-2">
-          <div className="print:flex print:items-center print:justify-between hidden">
-            <CardTitle className="text-xl font-bold">{title}</CardTitle>
-            <div className="text-sm text-muted-foreground">
-              Semaine {formatWeekRange(weekStartDate)}
+  const renderTaskTable = (period: 'morning' | 'afternoon', title: string) => {
+    const weekPeople = getWeekAssignedPeople(period);
+    
+    if (weekPeople.length === 0) {
+      return (
+        <Card className="mb-6">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg font-semibold">{title}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground text-center py-8">
+              Aucune personne n'est affectée au créneau "{title.toLowerCase()}" pour cette semaine.
+              <br />
+              <span className="text-sm">Veuillez d'abord créer le planning mensuel.</span>
+            </p>
+          </CardContent>
+        </Card>
+      );
+    }
+
+    return (
+      <div className="print-page mb-6">
+        <Card className="print:shadow-none print:border-none">
+          <CardHeader className="pb-3 print:pb-2">
+            <div className="print:flex print:items-center print:justify-between hidden">
+              <CardTitle className="text-xl font-bold">{title}</CardTitle>
+              <div className="text-sm text-muted-foreground">
+                Semaine {formatWeekRange(weekStartDate)}
+              </div>
             </div>
-          </div>
-          <CardTitle className="text-lg font-semibold print:hidden">{title}</CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <Table className="print:text-[11px]">
-              <TableHeader>
-                <TableRow className="bg-muted/50 print:bg-primary print:text-primary-foreground">
-                  <TableHead className="w-[120px] font-semibold sticky left-0 bg-muted/50 print:bg-primary print:text-primary-foreground z-10 print:static">
-                    Personnel
-                  </TableHead>
-                  {weekDates.map((date, idx) => {
-                    const isWeekend = idx >= 5;
-                    return (
-                      <TableHead
-                        key={idx}
-                        className={cn(
-                          'text-center min-w-[140px] font-semibold print:min-w-0',
-                          isWeekend && 'bg-orange-50 dark:bg-orange-950/20 print:bg-orange-100'
-                        )}
-                      >
-                        <div>{DAYS_OF_WEEK_FR[idx]}</div>
-                        <div className="text-xs font-normal text-muted-foreground print:text-inherit print:opacity-80">
-                          {formatDayWithDate(date)}
-                        </div>
-                      </TableHead>
-                    );
-                  })}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {people.map((person) => (
-                  <TableRow key={person.id} className="print:break-inside-avoid">
-                    <TableCell className="font-medium sticky left-0 bg-background z-10 border-r print:static print:bg-transparent">
-                      <div className="flex items-center gap-2">
-                        <span
-                          className={cn(
-                            'w-2 h-2 rounded-full print:w-2 print:h-2',
-                            person.category === 'Salarié' && 'bg-blue-500',
-                            person.category === 'Bénévole' && 'bg-green-500',
-                            person.category === 'Prestataire' && 'bg-purple-500',
-                            person.category === 'Woofer' && 'bg-orange-500'
-                          )}
-                        />
-                        {person.name}
-                      </div>
-                    </TableCell>
-                    {weekDates.map((date, dayIdx) => {
-                      const isWeekend = dayIdx >= 5;
+            <CardTitle className="text-lg font-semibold print:hidden">{title}</CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <Table className="print:text-[11px]">
+                <TableHeader>
+                  <TableRow className="bg-muted/50 print:bg-primary print:text-primary-foreground">
+                    <TableHead className="w-[120px] font-semibold sticky left-0 bg-muted/50 print:bg-primary print:text-primary-foreground z-10 print:static">
+                      Personnel
+                    </TableHead>
+                    {weekDates.map((date, idx) => {
+                      const isWeekend = idx >= 5;
                       return (
-                        <TableCell
-                          key={dayIdx}
+                        <TableHead
+                          key={idx}
                           className={cn(
-                            'p-0 border print:p-1',
-                            isWeekend && 'bg-orange-50/50 dark:bg-orange-950/10 print:bg-orange-50'
+                            'text-center min-w-[140px] font-semibold print:min-w-0',
+                            isWeekend && 'bg-orange-50 dark:bg-orange-950/20 print:bg-orange-100'
                           )}
                         >
-                          <TaskCell
-                            value={getTaskValue(person.id, dayIdx, period)}
-                            onChange={(tasks) => handleTaskChange(person.id, dayIdx, period, tasks)}
-                            personName={person.name}
-                            dayName={DAYS_OF_WEEK_FR[dayIdx]}
-                            period={period}
-                          />
-                        </TableCell>
+                          <div>{DAYS_OF_WEEK_FR[idx]}</div>
+                          <div className="text-xs font-normal text-muted-foreground print:text-inherit print:opacity-80">
+                            {formatDayWithDate(date)}
+                          </div>
+                        </TableHead>
                       );
                     })}
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
+                </TableHeader>
+                <TableBody>
+                  {weekPeople.map((person) => (
+                    <TableRow key={person.id} className="print:break-inside-avoid">
+                      <TableCell className="font-medium sticky left-0 bg-background z-10 border-r print:static print:bg-transparent">
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={cn(
+                              'w-2 h-2 rounded-full print:w-2 print:h-2',
+                              person.category === 'Salarié' && 'bg-blue-500',
+                              person.category === 'Bénévole' && 'bg-green-500',
+                              person.category === 'Prestataire' && 'bg-purple-500',
+                              person.category === 'Woofer' && 'bg-orange-500'
+                            )}
+                          />
+                          {person.name}
+                        </div>
+                      </TableCell>
+                      {weekDates.map((date, dayIdx) => {
+                        const isWeekend = dayIdx >= 5;
+                        const isAssignedToday = getAssignedPeople(dayIdx, period).some(p => p.id === person.id);
+                        
+                        return (
+                          <TableCell
+                            key={dayIdx}
+                            className={cn(
+                              'p-0 border print:p-1',
+                              isWeekend && 'bg-orange-50/50 dark:bg-orange-950/10 print:bg-orange-50',
+                              !isAssignedToday && 'bg-muted/30'
+                            )}
+                          >
+                            {isAssignedToday ? (
+                              <TaskCell
+                                value={getTaskValue(person.id, dayIdx, period)}
+                                onChange={(tasks) => handleTaskChange(person.id, dayIdx, period, tasks)}
+                                personName={person.name}
+                                dayName={DAYS_OF_WEEK_FR[dayIdx]}
+                                period={period}
+                              />
+                            ) : (
+                              <div className="h-full min-h-[40px] flex items-center justify-center text-xs text-muted-foreground">
+                                —
+                              </div>
+                            )}
+                          </TableCell>
+                        );
+                      })}
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  };
 
   return (
     <div className="p-6 print:p-0">

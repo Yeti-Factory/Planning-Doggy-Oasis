@@ -1,4 +1,30 @@
-export const PREDEFINED_TASKS = [
+// Tâches avec horaires fixes (matin)
+export const MORNING_TASKS_WITH_TIME = [
+  '9h aide au nettoyage',
+  '9h traitement',
+  '9h50 départ médiation école',
+  '10h45 préparation des gamelles',
+  '11h départ pour le fret',
+  '11h20 nourrissage',
+  '11h45 balade',
+  '11h45 balade chef de meute',
+  '12h30 passer du temps en quarantaine',
+] as const;
+
+// Tâches avec horaires fixes (après-midi)
+export const AFTERNOON_TASKS_WITH_TIME = [
+  '12h nettoyage algeco',
+  '12h lavage des gamelles',
+  '14h/14h45 traitement antipuce et vermifuge',
+  '14h/14h45 médiation APADAG',
+  '14h/14h45 remplir tableau suivis des chiens',
+  '14h/15h45 traitement antipuce et vermifuge',
+  '16h30 balade',
+  '16h30 balade chef de meute',
+] as const;
+
+// Tâches générales (sans horaire fixe)
+export const GENERAL_TASKS = [
   'repos',
   'congé',
   'bureau',
@@ -6,7 +32,9 @@ export const PREDEFINED_TASKS = [
   'préparation des gamelles',
   'balade',
   'balade chef de meute',
+  'balade en ville',
   'sortie des chiens',
+  'sortie des chiens infirmerie',
   'infirmerie',
   'éducation',
   'toilettage',
@@ -29,6 +57,11 @@ export const PREDEFINED_TASKS = [
   'nettoyage algeco',
   'remplir tableau suivis des chiens',
   'laver les chiens pour le transfert',
+] as const;
+
+// Liste complète pour rétro-compatibilité
+export const PREDEFINED_TASKS = [
+  ...GENERAL_TASKS,
 ] as const;
 
 export type PredefinedTask = typeof PREDEFINED_TASKS[number];

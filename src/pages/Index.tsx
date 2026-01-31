@@ -4,9 +4,10 @@ import { MonthPlanning } from '@/components/MonthPlanning';
 import { PeopleManager } from '@/components/PeopleManager';
 import { SettingsPanel } from '@/components/SettingsPanel';
 import { UserGuide } from '@/components/UserGuide';
+import { WeeklyTaskPlanner } from '@/components/WeeklyTaskPlanner';
 import { Helmet } from 'react-helmet-async';
 
-type View = 'guide' | 'people' | 'settings' | { type: 'month'; year: number; month: number };
+type View = 'guide' | 'people' | 'settings' | 'tasks' | { type: 'month'; year: number; month: number };
 
 const Index = () => {
   const [currentView, setCurrentView] = useState<View>({ type: 'month', year: 2026, month: 0 });
@@ -20,6 +21,9 @@ const Index = () => {
     }
     if (currentView === 'settings') {
       return <SettingsPanel />;
+    }
+    if (currentView === 'tasks') {
+      return <WeeklyTaskPlanner />;
     }
     if (typeof currentView === 'object' && currentView.type === 'month') {
       return <MonthPlanning year={currentView.year} month={currentView.month} />;

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { PREDEFINED_TASKS } from '@/types/tasks';
+import { GENERAL_TASKS, MORNING_TASKS_WITH_TIME, AFTERNOON_TASKS_WITH_TIME } from '@/types/tasks';
 import { cn } from '@/lib/utils';
 import {
   Popover,
@@ -9,7 +9,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Check, ChevronDown, X } from 'lucide-react';
+import { Check, X, Clock } from 'lucide-react';
 
 interface TaskCellProps {
   value: string;
@@ -24,12 +24,19 @@ export function TaskCell({ value, onChange, personName, dayName, period }: TaskC
   const [searchValue, setSearchValue] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const filteredTasks = PREDEFINED_TASKS.filter((task) =>
+  // Obtenir les tâches avec horaires selon la période
+  const tasksWithTime = period === 'morning' ? MORNING_TASKS_WITH_TIME : AFTERNOON_TASKS_WITH_TIME;
+
+  // Filtrer les tâches
+  const filteredGeneralTasks = GENERAL_TASKS.filter((task) =>
+    task.toLowerCase().includes(searchValue.toLowerCase())
+  );
+
+  const filteredTimedTasks = tasksWithTime.filter((task) =>
     task.toLowerCase().includes(searchValue.toLowerCase())
   );
 
   const handleSelect = (task: string) => {
-    // If already has value, append with " + "
     if (value && value.trim() !== '') {
       onChange(`${value} + ${task}`);
     } else {
@@ -63,6 +70,27 @@ export function TaskCell({ value, onChange, personName, dayName, period }: TaskC
   const periodLabel = period === 'morning' ? 'Matin' : 'Après-midi';
   const displayValue = value || '';
   const isEmpty = !value || value.trim() === '';
+
+  const renderTaskButton = (task: string, hasTime: boolean = false) => (
+    <button
+      key={task}
+      onClick={() => handleSelect(task)}
+      className={cn(
+        'w-full flex items-center gap-2 px-2 py-1.5 text-sm rounded-md text-left',
+        'hover:bg-accent hover:text-accent-foreground transition-colors',
+        value?.includes(task) && 'bg-accent/50'
+      )}
+    >
+      {value?.includes(task) ? (
+        <Check className="h-3 w-3 shrink-0" />
+      ) : hasTime ? (
+        <Clock className="h-3 w-3 shrink-0 text-muted-foreground" />
+      ) : (
+        <span className="w-3" />
+      )}
+      <span>{task}</span>
+    </button>
+  );
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -105,25 +133,31 @@ export function TaskCell({ value, onChange, personName, dayName, period }: TaskC
             </p>
           )}
         </div>
-        <ScrollArea className="h-[200px]">
+        <ScrollArea className="h-[280px]">
           <div className="p-2 space-y-1">
-            {filteredTasks.map((task) => (
-              <button
-                key={task}
-                onClick={() => handleSelect(task)}
-                className={cn(
-                  'w-full flex items-center gap-2 px-2 py-1.5 text-sm rounded-md text-left',
-                  'hover:bg-accent hover:text-accent-foreground transition-colors',
-                  value?.includes(task) && 'bg-accent/50'
-                )}
-              >
-                {value?.includes(task) && <Check className="h-3 w-3" />}
-                <span className={cn(value?.includes(task) && 'ml-0', !value?.includes(task) && 'ml-5')}>
-                  {task}
-                </span>
-              </button>
-            ))}
-            {filteredTasks.length === 0 && (
+            {/* Tâches avec horaires */}
+            {filteredTimedTasks.length > 0 && (
+              <>
+                <p className="text-xs font-semibold text-muted-foreground px-2 py-1 flex items-center gap-1">
+                  <Clock className="h-3 w-3" />
+                  Tâches avec horaires ({periodLabel})
+                </p>
+                {filteredTimedTasks.map((task) => renderTaskButton(task, true))}
+                <div className="my-2 border-t" />
+              </>
+            )}
+
+            {/* Tâches générales */}
+            {filteredGeneralTasks.length > 0 && (
+              <>
+                <p className="text-xs font-semibold text-muted-foreground px-2 py-1">
+                  Tâches générales
+                </p>
+                {filteredGeneralTasks.map((task) => renderTaskButton(task, false))}
+              </>
+            )}
+
+            {filteredGeneralTasks.length === 0 && filteredTimedTasks.length === 0 && (
               <p className="text-sm text-muted-foreground text-center py-4">
                 Aucune tâche trouvée. Appuyez sur Entrée pour ajouter.
               </p>

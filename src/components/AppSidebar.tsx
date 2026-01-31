@@ -8,10 +8,11 @@ import {
   BookOpen,
   ChevronDown,
   ChevronRight,
+  ClipboardList,
 } from 'lucide-react';
 import logo from '@/assets/logo.png';
 
-type View = 'guide' | 'people' | 'settings' | { type: 'month'; year: number; month: number };
+type View = 'guide' | 'people' | 'settings' | 'tasks' | { type: 'month'; year: number; month: number };
 
 interface AppSidebarProps {
   currentView: View;
@@ -92,6 +93,20 @@ export function AppSidebar({ currentView, onViewChange }: AppSidebarProps) {
         >
           <Settings className="w-4 h-4" />
           Paramètres
+        </button>
+
+        {/* Tasks Planner */}
+        <button
+          onClick={() => onViewChange('tasks')}
+          className={cn(
+            'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors mb-1',
+            currentView === 'tasks'
+              ? 'bg-sidebar-primary text-sidebar-primary-foreground'
+              : 'hover:bg-sidebar-accent text-sidebar-foreground'
+          )}
+        >
+          <ClipboardList className="w-4 h-4" />
+          Planificateur de tâches
         </button>
 
         {/* Separator */}

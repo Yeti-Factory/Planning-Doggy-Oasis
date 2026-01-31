@@ -1,11 +1,12 @@
 import { useState, useMemo } from 'react';
-import { format, addDays } from 'date-fns';
+import { format, addDays, getYear } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { usePlanningStore } from '@/hooks/usePlanningStore';
 import { useWeeklyTasksStore } from '@/hooks/useWeeklyTasksStore';
 import { DAYS_OF_WEEK_FR } from '@/types/tasks';
 import { TaskCell } from './TaskCell';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Table,
@@ -26,7 +27,12 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { ChevronLeft, ChevronRight, Copy, Trash2, ClipboardPaste, Printer } from 'lucide-react';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { ChevronLeft, ChevronRight, Copy, Trash2, ClipboardPaste, Printer, Search } from 'lucide-react';
 import { AddCustomTaskDialog } from './AddCustomTaskDialog';
 import {
   getWeekStartDate,
@@ -34,6 +40,8 @@ import {
   getNextWeekStart,
   getPreviousWeekStart,
   formatDayWithDate,
+  getWeekNumber,
+  getWeekStartFromNumber,
 } from '@/lib/weekUtils';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -49,7 +57,9 @@ export function WeeklyTaskPlanner({ initialWeekStart }: WeeklyTaskPlannerProps) 
     initialWeekStart || getWeekStartDate(new Date())
   );
   const [copiedWeek, setCopiedWeek] = useState<string | null>(null);
-
+  const [goToWeekNumber, setGoToWeekNumber] = useState('');
+  const [goToYear, setGoToYear] = useState(getYear(new Date()).toString());
+  const [goToWeekOpen, setGoToWeekOpen] = useState(false);
   const { people, getAssignment, getPersonById } = usePlanningStore();
   const { setTaskAssignment, getTaskAssignment, clearWeekTasks, copyWeekTasks } = useWeeklyTasksStore();
 
@@ -106,6 +116,25 @@ export function WeeklyTaskPlanner({ initialWeekStart }: WeeklyTaskPlannerProps) 
 
   const handleNextWeek = () => {
     setWeekStartDate(getNextWeekStart(weekStartDate));
+  };
+
+  const handleGoToWeek = () => {
+    const weekNum = parseInt(goToWeekNumber, 10);
+    const year = parseInt(goToYear, 10);
+    
+    if (isNaN(weekNum) || weekNum < 1 || weekNum > 53) {
+      toast.error('Numéro de semaine invalide (1-53)');
+      return;
+    }
+    if (isNaN(year) || year < 2020 || year > 2100) {
+      toast.error('Année invalide');
+      return;
+    }
+    
+    const newWeekStart = getWeekStartFromNumber(weekNum, year);
+    setWeekStartDate(newWeekStart);
+    setGoToWeekOpen(false);
+    toast.success(`Semaine ${weekNum} de ${year}`);
   };
 
   const handleCopyWeek = () => {
@@ -280,12 +309,54 @@ export function WeeklyTaskPlanner({ initialWeekStart }: WeeklyTaskPlannerProps) 
           <Button variant="outline" size="icon" onClick={handlePreviousWeek}>
             <ChevronLeft className="h-4 w-4" />
           </Button>
-          <div className="text-lg font-semibold px-4 py-2 bg-muted rounded-md min-w-[280px] text-center">
+          <div className="text-lg font-semibold px-4 py-2 bg-muted rounded-md min-w-[320px] text-center">
             Semaine {formatWeekRange(weekStartDate)}
           </div>
           <Button variant="outline" size="icon" onClick={handleNextWeek}>
             <ChevronRight className="h-4 w-4" />
           </Button>
+          
+          <Popover open={goToWeekOpen} onOpenChange={setGoToWeekOpen}>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm" className="ml-2">
+                <Search className="h-4 w-4 mr-2" />
+                Aller à
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-64 bg-popover" align="start">
+              <div className="space-y-3">
+                <p className="text-sm font-medium">Aller à la semaine</p>
+                <div className="flex gap-2">
+                  <div className="flex-1">
+                    <label className="text-xs text-muted-foreground">N° semaine</label>
+                    <Input
+                      type="number"
+                      min={1}
+                      max={53}
+                      placeholder="1-53"
+                      value={goToWeekNumber}
+                      onChange={(e) => setGoToWeekNumber(e.target.value)}
+                      className="h-8"
+                    />
+                  </div>
+                  <div className="w-20">
+                    <label className="text-xs text-muted-foreground">Année</label>
+                    <Input
+                      type="number"
+                      min={2020}
+                      max={2100}
+                      value={goToYear}
+                      onChange={(e) => setGoToYear(e.target.value)}
+                      className="h-8"
+                    />
+                  </div>
+                </div>
+                <Button size="sm" className="w-full" onClick={handleGoToWeek}>
+                  Aller
+                </Button>
+              </div>
+            </PopoverContent>
+          </Popover>
         </div>
 
         <div className="flex items-center gap-2">

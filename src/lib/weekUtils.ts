@@ -1,4 +1,4 @@
-import { startOfWeek, endOfWeek, format, addWeeks, subWeeks, addDays } from 'date-fns';
+import { startOfWeek, endOfWeek, format, addWeeks, subWeeks, addDays, getWeek } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
 export const getWeekStartDate = (date: Date): string => {
@@ -16,10 +16,16 @@ export const getWeekDates = (weekStartDate: string): Date[] => {
   return Array.from({ length: 7 }, (_, i) => addDays(start, i));
 };
 
+export const getWeekNumber = (weekStartDate: string): number => {
+  const date = new Date(weekStartDate);
+  return getWeek(date, { weekStartsOn: 1, firstWeekContainsDate: 4 });
+};
+
 export const formatWeekRange = (weekStartDate: string): string => {
   const start = new Date(weekStartDate);
   const end = addDays(start, 6);
-  return `du ${format(start, 'dd/MM/yyyy', { locale: fr })} au ${format(end, 'dd/MM/yyyy', { locale: fr })}`;
+  const weekNum = getWeekNumber(weekStartDate);
+  return `n°${weekNum} — du ${format(start, 'dd/MM/yyyy', { locale: fr })} au ${format(end, 'dd/MM/yyyy', { locale: fr })}`; 
 };
 
 export const getNextWeekStart = (weekStartDate: string): string => {

@@ -9,6 +9,7 @@ import {
   ChevronDown,
   ChevronRight,
   ClipboardList,
+  FolderOpen,
 } from 'lucide-react';
 import logo from '@/assets/logo.png';
 
@@ -21,12 +22,12 @@ interface AppSidebarProps {
 
 export function AppSidebar({ currentView, onViewChange }: AppSidebarProps) {
   const currentYear = new Date().getFullYear();
-  const [expandedYears, setExpandedYears] = useState<number[]>([2026, currentYear]);
+  const [expandedSections, setExpandedSections] = useState<string[]>(['planning', '2026']);
   const years = [2026, 2027, 2028];
 
-  const toggleYear = (year: number) => {
-    setExpandedYears((prev) =>
-      prev.includes(year) ? prev.filter((y) => y !== year) : [...prev, year]
+  const toggleSection = (section: string) => {
+    setExpandedSections((prev) =>
+      prev.includes(section) ? prev.filter((s) => s !== section) : [...prev, section]
     );
   };
 
@@ -38,6 +39,8 @@ export function AppSidebar({ currentView, onViewChange }: AppSidebarProps) {
       currentView.month === month
     );
   };
+
+  const isPlanningActive = typeof currentView === 'object' && currentView.type === 'month';
 
   return (
     <aside className="w-64 h-screen bg-sidebar text-sidebar-foreground flex flex-col shrink-0 border-r border-sidebar-border">
@@ -95,6 +98,78 @@ export function AppSidebar({ currentView, onViewChange }: AppSidebarProps) {
           Paramètres
         </button>
 
+        {/* Separator */}
+        <div className="h-px bg-sidebar-border my-3" />
+
+        {/* Planning Mensuel Section */}
+        <div className="space-y-1">
+          <button
+            onClick={() => toggleSection('planning')}
+            className={cn(
+              'w-full flex items-center gap-2 px-3 py-2.5 text-sm font-semibold rounded-lg transition-colors',
+              isPlanningActive
+                ? 'bg-sidebar-accent text-sidebar-foreground'
+                : 'hover:bg-sidebar-accent text-sidebar-foreground'
+            )}
+          >
+            {expandedSections.includes('planning') ? (
+              <ChevronDown className="w-4 h-4" />
+            ) : (
+              <ChevronRight className="w-4 h-4" />
+            )}
+            <Calendar className="w-4 h-4" />
+            Planning mensuel
+          </button>
+
+          {expandedSections.includes('planning') && (
+            <div className="ml-3 space-y-0.5 animate-slide-in">
+              {years.map((year) => (
+                <div key={year}>
+                  <button
+                    onClick={() => toggleSection(year.toString())}
+                    className={cn(
+                      'w-full flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-md transition-colors',
+                      typeof currentView === 'object' && currentView.year === year
+                        ? 'bg-sidebar-accent/50 text-sidebar-foreground'
+                        : 'hover:bg-sidebar-accent/50 text-sidebar-foreground/90'
+                    )}
+                  >
+                    {expandedSections.includes(year.toString()) ? (
+                      <ChevronDown className="w-3 h-3" />
+                    ) : (
+                      <ChevronRight className="w-3 h-3" />
+                    )}
+                    <FolderOpen className="w-3.5 h-3.5" />
+                    {year}
+                  </button>
+
+                  {expandedSections.includes(year.toString()) && (
+                    <div className="ml-5 mt-0.5 space-y-0.5 animate-slide-in">
+                      {MONTHS_FR.map((month, idx) => (
+                        <button
+                          key={`${year}-${idx}`}
+                          onClick={() => onViewChange({ type: 'month', year, month: idx })}
+                          className={cn(
+                            'w-full text-left px-3 py-1.5 text-sm rounded-md transition-colors',
+                            isMonthActive(year, idx)
+                              ? 'bg-sidebar-primary text-sidebar-primary-foreground font-medium'
+                              : 'text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground'
+                          )}
+                        >
+                          {month}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Separator */}
+        <div className="h-px bg-sidebar-border my-3" />
+
         {/* Tasks Planner */}
         <button
           onClick={() => onViewChange('tasks')}
@@ -108,48 +183,6 @@ export function AppSidebar({ currentView, onViewChange }: AppSidebarProps) {
           <ClipboardList className="w-4 h-4" />
           Planificateur de tâches
         </button>
-
-        {/* Separator */}
-        <div className="h-px bg-sidebar-border my-3" />
-
-        {/* Years & Months */}
-        <div className="space-y-1">
-          {years.map((year) => (
-            <div key={year}>
-              <button
-                onClick={() => toggleYear(year)}
-                className="w-full flex items-center gap-2 px-3 py-2 text-sm font-semibold text-sidebar-foreground hover:bg-sidebar-accent rounded-lg transition-colors"
-              >
-                {expandedYears.includes(year) ? (
-                  <ChevronDown className="w-4 h-4" />
-                ) : (
-                  <ChevronRight className="w-4 h-4" />
-                )}
-                <Calendar className="w-4 h-4" />
-                {year}
-              </button>
-
-              {expandedYears.includes(year) && (
-                <div className="ml-4 mt-1 space-y-0.5 animate-slide-in">
-                  {MONTHS_FR.map((month, idx) => (
-                    <button
-                      key={`${year}-${idx}`}
-                      onClick={() => onViewChange({ type: 'month', year, month: idx })}
-                      className={cn(
-                        'w-full text-left px-3 py-1.5 text-sm rounded-md transition-colors',
-                        isMonthActive(year, idx)
-                          ? 'bg-sidebar-primary text-sidebar-primary-foreground font-medium'
-                          : 'text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground'
-                      )}
-                    >
-                      {month}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
       </nav>
 
       {/* Footer */}

@@ -26,7 +26,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { ChevronLeft, ChevronRight, Copy, Trash2, ClipboardPaste } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Copy, Trash2, ClipboardPaste, Printer } from 'lucide-react';
 import {
   getWeekStartDate,
   formatWeekRange,
@@ -80,6 +80,10 @@ export function WeeklyTaskPlanner({ initialWeekStart }: WeeklyTaskPlannerProps) 
     toast.success('Semaine effacée');
   };
 
+  const handlePrint = () => {
+    window.print();
+  };
+
   const handleTaskChange = (
     personId: string,
     day: number,
@@ -95,95 +99,103 @@ export function WeeklyTaskPlanner({ initialWeekStart }: WeeklyTaskPlannerProps) 
   };
 
   const renderTaskTable = (period: 'morning' | 'afternoon', title: string) => (
-    <Card className="mb-6">
-      <CardHeader className="pb-3">
-        <CardTitle className="text-lg font-semibold">{title}</CardTitle>
-      </CardHeader>
-      <CardContent className="p-0">
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-muted/50">
-                <TableHead className="w-[120px] font-semibold sticky left-0 bg-muted/50 z-10">
-                  Personnel
-                </TableHead>
-                {weekDates.map((date, idx) => {
-                  const isWeekend = idx >= 5;
-                  return (
-                    <TableHead
-                      key={idx}
-                      className={cn(
-                        'text-center min-w-[140px] font-semibold',
-                        isWeekend && 'bg-orange-50 dark:bg-orange-950/20'
-                      )}
-                    >
-                      <div>{DAYS_OF_WEEK_FR[idx]}</div>
-                      <div className="text-xs font-normal text-muted-foreground">
-                        {formatDayWithDate(date)}
-                      </div>
-                    </TableHead>
-                  );
-                })}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {people.map((person) => (
-                <TableRow key={person.id}>
-                  <TableCell className="font-medium sticky left-0 bg-background z-10 border-r">
-                    <div className="flex items-center gap-2">
-                      <span
-                        className={cn(
-                          'w-2 h-2 rounded-full',
-                          person.category === 'Salarié' && 'bg-blue-500',
-                          person.category === 'Bénévole' && 'bg-green-500',
-                          person.category === 'Prestataire' && 'bg-purple-500',
-                          person.category === 'Woofer' && 'bg-orange-500'
-                        )}
-                      />
-                      {person.name}
-                    </div>
-                  </TableCell>
-                  {weekDates.map((date, dayIdx) => {
-                    const isWeekend = dayIdx >= 5;
+    <div className="print-page mb-6">
+      <Card className="print:shadow-none print:border-none">
+        <CardHeader className="pb-3 print:pb-2">
+          <div className="print:flex print:items-center print:justify-between hidden">
+            <CardTitle className="text-xl font-bold">{title}</CardTitle>
+            <div className="text-sm text-muted-foreground">
+              Semaine {formatWeekRange(weekStartDate)}
+            </div>
+          </div>
+          <CardTitle className="text-lg font-semibold print:hidden">{title}</CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <Table className="print:text-[11px]">
+              <TableHeader>
+                <TableRow className="bg-muted/50 print:bg-primary print:text-primary-foreground">
+                  <TableHead className="w-[120px] font-semibold sticky left-0 bg-muted/50 print:bg-primary print:text-primary-foreground z-10 print:static">
+                    Personnel
+                  </TableHead>
+                  {weekDates.map((date, idx) => {
+                    const isWeekend = idx >= 5;
                     return (
-                      <TableCell
-                        key={dayIdx}
+                      <TableHead
+                        key={idx}
                         className={cn(
-                          'p-0 border',
-                          isWeekend && 'bg-orange-50/50 dark:bg-orange-950/10'
+                          'text-center min-w-[140px] font-semibold print:min-w-0',
+                          isWeekend && 'bg-orange-50 dark:bg-orange-950/20 print:bg-orange-100'
                         )}
                       >
-                        <TaskCell
-                          value={getTaskValue(person.id, dayIdx, period)}
-                          onChange={(tasks) => handleTaskChange(person.id, dayIdx, period, tasks)}
-                          personName={person.name}
-                          dayName={DAYS_OF_WEEK_FR[dayIdx]}
-                          period={period}
-                        />
-                      </TableCell>
+                        <div>{DAYS_OF_WEEK_FR[idx]}</div>
+                        <div className="text-xs font-normal text-muted-foreground print:text-inherit print:opacity-80">
+                          {formatDayWithDate(date)}
+                        </div>
+                      </TableHead>
                     );
                   })}
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      </CardContent>
-    </Card>
+              </TableHeader>
+              <TableBody>
+                {people.map((person) => (
+                  <TableRow key={person.id} className="print:break-inside-avoid">
+                    <TableCell className="font-medium sticky left-0 bg-background z-10 border-r print:static print:bg-transparent">
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={cn(
+                            'w-2 h-2 rounded-full print:w-2 print:h-2',
+                            person.category === 'Salarié' && 'bg-blue-500',
+                            person.category === 'Bénévole' && 'bg-green-500',
+                            person.category === 'Prestataire' && 'bg-purple-500',
+                            person.category === 'Woofer' && 'bg-orange-500'
+                          )}
+                        />
+                        {person.name}
+                      </div>
+                    </TableCell>
+                    {weekDates.map((date, dayIdx) => {
+                      const isWeekend = dayIdx >= 5;
+                      return (
+                        <TableCell
+                          key={dayIdx}
+                          className={cn(
+                            'p-0 border print:p-1',
+                            isWeekend && 'bg-orange-50/50 dark:bg-orange-950/10 print:bg-orange-50'
+                          )}
+                        >
+                          <TaskCell
+                            value={getTaskValue(person.id, dayIdx, period)}
+                            onChange={(tasks) => handleTaskChange(person.id, dayIdx, period, tasks)}
+                            personName={person.name}
+                            dayName={DAYS_OF_WEEK_FR[dayIdx]}
+                            period={period}
+                          />
+                        </TableCell>
+                      );
+                    })}
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 
   return (
-    <div className="p-6">
-      {/* Header */}
-      <div className="mb-6">
+    <div className="p-6 print:p-0">
+      {/* Header - hidden on print */}
+      <div className="mb-6 no-print">
         <h1 className="text-2xl font-bold mb-2">Planificateur de tâches</h1>
         <p className="text-sm text-muted-foreground">
           Attention : les tâches attribuées dans ce planning peuvent être modifiées selon les besoins du service.
         </p>
       </div>
 
-      {/* Week Navigation */}
-      <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+      {/* Week Navigation - hidden on print */}
+      <div className="flex flex-wrap items-center justify-between gap-4 mb-6 no-print">
         <div className="flex items-center gap-2">
           <Button variant="outline" size="icon" onClick={handlePreviousWeek}>
             <ChevronLeft className="h-4 w-4" />
@@ -209,6 +221,10 @@ export function WeeklyTaskPlanner({ initialWeekStart }: WeeklyTaskPlannerProps) 
           >
             <ClipboardPaste className="h-4 w-4 mr-2" />
             Coller
+          </Button>
+          <Button variant="outline" size="sm" onClick={handlePrint}>
+            <Printer className="h-4 w-4 mr-2" />
+            Imprimer
           </Button>
           <AlertDialog>
             <AlertDialogTrigger asChild>
@@ -240,8 +256,8 @@ export function WeeklyTaskPlanner({ initialWeekStart }: WeeklyTaskPlannerProps) 
       {renderTaskTable('morning', 'Matin')}
       {renderTaskTable('afternoon', 'Après-midi')}
 
-      {/* Legend */}
-      <Card>
+      {/* Legend - hidden on print */}
+      <Card className="no-print">
         <CardContent className="py-4">
           <div className="flex flex-wrap gap-6 text-sm">
             <div className="flex items-center gap-2">

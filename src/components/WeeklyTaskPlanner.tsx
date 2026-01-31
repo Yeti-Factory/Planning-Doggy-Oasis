@@ -27,6 +27,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { ChevronLeft, ChevronRight, Copy, Trash2, ClipboardPaste, Printer } from 'lucide-react';
+import { AddCustomTaskDialog } from './AddCustomTaskDialog';
 import {
   getWeekStartDate,
   formatWeekRange,
@@ -262,10 +263,15 @@ export function WeeklyTaskPlanner({ initialWeekStart }: WeeklyTaskPlannerProps) 
     <div className="p-6 print:p-0">
       {/* Header - hidden on print */}
       <div className="mb-6 no-print">
-        <h1 className="text-2xl font-bold mb-2">Planificateur de tâches</h1>
-        <p className="text-sm text-muted-foreground">
-          Attention : les tâches attribuées dans ce planning peuvent être modifiées selon les besoins du service.
-        </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold mb-2">Planificateur de tâches</h1>
+            <p className="text-sm text-muted-foreground">
+              Attention : les tâches attribuées dans ce planning peuvent être modifiées selon les besoins du service.
+            </p>
+          </div>
+          <AddCustomTaskDialog />
+        </div>
       </div>
 
       {/* Week Navigation - hidden on print */}

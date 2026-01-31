@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { GENERAL_TASKS, MORNING_TASKS_WITH_TIME, AFTERNOON_TASKS_WITH_TIME } from '@/types/tasks';
+import { useCustomTasksStore } from '@/hooks/useCustomTasksStore';
 import { cn } from '@/lib/utils';
 import {
   Popover,
@@ -23,6 +24,7 @@ export function TaskCell({ value, onChange, personName, dayName, period }: TaskC
   const [open, setOpen] = useState(false);
   const [searchValue, setSearchValue] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
+  const { customTasks } = useCustomTasksStore();
 
   // Obtenir les tâches avec horaires selon la période
   const tasksWithTime = period === 'morning' ? MORNING_TASKS_WITH_TIME : AFTERNOON_TASKS_WITH_TIME;
@@ -33,6 +35,10 @@ export function TaskCell({ value, onChange, personName, dayName, period }: TaskC
   );
 
   const filteredTimedTasks = tasksWithTime.filter((task) =>
+    task.toLowerCase().includes(searchValue.toLowerCase())
+  );
+
+  const filteredCustomTasks = customTasks.filter((task) =>
     task.toLowerCase().includes(searchValue.toLowerCase())
   );
 
@@ -157,7 +163,20 @@ export function TaskCell({ value, onChange, personName, dayName, period }: TaskC
               </>
             )}
 
-            {filteredGeneralTasks.length === 0 && filteredTimedTasks.length === 0 && (
+            {/* Tâches personnalisées */}
+            {filteredCustomTasks.length > 0 && (
+              <>
+                {(filteredGeneralTasks.length > 0 || filteredTimedTasks.length > 0) && (
+                  <div className="my-2 border-t" />
+                )}
+                <p className="text-xs font-semibold text-muted-foreground px-2 py-1">
+                  Tâches personnalisées
+                </p>
+                {filteredCustomTasks.map((task) => renderTaskButton(task, false))}
+              </>
+            )}
+
+            {filteredGeneralTasks.length === 0 && filteredTimedTasks.length === 0 && filteredCustomTasks.length === 0 && (
               <p className="text-sm text-muted-foreground text-center py-4">
                 Aucune tâche trouvée. Appuyez sur Entrée pour ajouter.
               </p>

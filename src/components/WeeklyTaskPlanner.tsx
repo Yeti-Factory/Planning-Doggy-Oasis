@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { format, addDays, getYear } from 'date-fns';
+import { getYear } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { usePlanningStore } from '@/hooks/usePlanningStore';
 import { useWeeklyTasksStore } from '@/hooks/useWeeklyTasksStore';
@@ -42,6 +42,7 @@ import {
   formatDayWithDate,
   getWeekNumber,
   getWeekStartFromNumber,
+  getWeekDates,
 } from '@/lib/weekUtils';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -64,8 +65,7 @@ export function WeeklyTaskPlanner({ initialWeekStart }: WeeklyTaskPlannerProps) 
   const { setTaskAssignment, getTaskAssignment, clearWeekTasks, copyWeekTasks } = useWeeklyTasksStore();
 
   const weekDates = useMemo(() => {
-    const start = new Date(weekStartDate);
-    return Array.from({ length: 7 }, (_, i) => addDays(start, i));
+    return getWeekDates(weekStartDate);
   }, [weekStartDate]);
 
   // Get people assigned to a specific period on a specific day

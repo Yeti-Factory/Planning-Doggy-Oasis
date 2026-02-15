@@ -1,44 +1,46 @@
 
 
-## Correction des dates decalees dans le planificateur
+## Correction du decalage de dates dans le planificateur de taches
 
 ### Probleme identifie
 
-Les dates ne correspondent pas aux bons jours car le code utilise des conversions UTC au lieu de dates locales :
-
-1. **`formatDateKey()`** dans `src/lib/dateUtils.ts` utilise `toISOString()` qui convertit en UTC -- un decalage d'une journee peut se produire selon le fuseau horaire.
-2. **`getWeekDates()`** dans `src/lib/weekUtils.ts` cree des dates avec `new Date("YYYY-MM-DD")` qui est interprete en UTC, ce qui decale les jours affiches.
-
-### Modifications prevues
-
-#### 1. `src/lib/dateUtils.ts` -- corriger `formatDateKey`
-
-Remplacer `date.toISOString().split('T')[0]` par une extraction manuelle des composants locaux :
+Dans `src/components/WeeklyTaskPlanner.tsx`, ligne 67 :
 
 ```typescript
-export function formatDateKey(date: Date): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
+const start = new Date(weekStartDate); // BUG: parse en UTC
 ```
 
-#### 2. `src/lib/weekUtils.ts` -- corriger `getWeekDates`
+Cette ligne cree les dates du tableau (detail) en UTC, alors que le bandeau de navigation utilise `formatWeekRange()` qui a deja ete corrige pour utiliser un parsing local. En Guyane (UTC-3), `new Date("2026-02-09")` donne le 8 fevrier a 21h locale, d'ou le decalage d'un jour dans le detail.
 
-Parser la date en local au lieu d'UTC :
+Les fleches ne "fonctionnent pas" car `getPreviousWeekStart` et `getNextWeekStart` sont deja corriges (parsing local), mais le resultat est ensuite re-parse en UTC a la ligne 67, ce qui annule la correction.
 
+### Correction
+
+**Fichier : `src/components/WeeklyTaskPlanner.tsx`**
+
+1. Importer `getWeekDates` depuis `@/lib/weekUtils` (qui utilise deja le parsing local corrige)
+2. Remplacer le calcul manuel de `weekDates` (lignes 66-69) par un appel a `getWeekDates(weekStartDate)`
+
+Avant :
 ```typescript
-export const getWeekDates = (weekStartDate: string): Date[] => {
-  const [year, month, day] = weekStartDate.split('-').map(Number);
-  const start = new Date(year, month - 1, day);
+const weekDates = useMemo(() => {
+  const start = new Date(weekStartDate);
   return Array.from({ length: 7 }, (_, i) => addDays(start, i));
-};
+}, [weekStartDate]);
 ```
 
-Et appliquer la meme correction partout ou `new Date(dateString)` est utilise dans ce fichier (`getWeekNumber`, `formatWeekRange`, `getNextWeekStart`, `getPreviousWeekStart`).
+Apres :
+```typescript
+const weekDates = useMemo(() => {
+  return getWeekDates(weekStartDate);
+}, [weekStartDate]);
+```
+
+Cette fonction `getWeekDates` existe deja dans `weekUtils.ts` et utilise le parsing local (`parseLocalDate`) qui a ete corrige precedemment.
 
 ### Impact
 
-Ces deux corrections eliminent tout decalage de date lie au fuseau horaire. Aucune modification de structure de donnees necessaire -- les cles de stockage restent au format `YYYY-MM-DD`.
+- Correction du decalage entre le bandeau de semaine et les dates du tableau
+- Correction du fonctionnement des fleches precedent/suivant en fuseau negatif (Guyane UTC-3)
+- Aucune modification de structure, une seule ligne changee
 

@@ -434,6 +434,9 @@ export function WeeklyTaskPlanner({ initialWeekStart }: WeeklyTaskPlannerProps) 
           </div>
         </CardContent>
       </Card>
+      <p className="text-xs text-muted-foreground mt-2 text-right no-print">
+        v2026-02-15-fix3
+      </p>
     </div>
   );
 }

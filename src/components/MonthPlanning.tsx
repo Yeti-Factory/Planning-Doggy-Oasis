@@ -153,7 +153,7 @@ export function MonthPlanning({ year, month }: MonthPlanningProps) {
                 const isWeekend = day.getDay() === 0 || day.getDay() === 6;
                 const dayNames = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
                 const dateStr = day.toLocaleDateString('fr-FR');
-                const key = day.toISOString().split('T')[0];
+                const key = formatDateKey(day);
                 const dayAssignments = assignments[key];
                 const morningNames = getSlotNames(dayAssignments?.morning);
                 const afternoonNames = getSlotNames(dayAssignments?.afternoon);

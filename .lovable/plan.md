@@ -1,65 +1,66 @@
 
-### Analyse du besoin
-L'utilisateur souhaite automatiser la sauvegarde des données de son application vers son OneDrive, en utilisant une méthode de synchronisation ("SYNC") qu'il a déjà mise en œuvre dans un autre projet.
 
-Après exploration des projets précédents, j'ai identifié que le projet **[Doggy Contract Hub](/projects/fcb316ee-df2b-4afa-93f8-bb9a71f3e45c)** contient une fonction `sync-onedrive` qui utilise l'API Microsoft Graph (via les identifiants Azure AD) pour envoyer des fichiers vers un dossier SharePoint/OneDrive partagé.
+## Sauvegarde automatique vers OneDrive
 
-### Objectifs
-1.  **Récupérer les identifiants** : Aider l'utilisateur à retrouver les identifiants Azure AD nécessaires dans ses autres projets.
-2.  **Mettre à jour la sauvegarde** : Modifier la fonction `auto-backup` existante (ou en créer une nouvelle) pour exporter les données en JSON et les pousser vers OneDrive.
-3.  **Sécurité** : Utiliser les secrets de l'éditeur pour stocker les identifiants Azure.
-
-### Plan d'action
-
-#### 1. Recherche des informations (SQL & Secrets)
-Je vais fournir à l'utilisateur une requête SQL pour vérifier si des informations de configuration sont stockées dans ses tables, mais surtout lui indiquer où trouver les secrets dans l'autre projet.
-
-*   **Action** : Fournir une requête SQL pour lister les tables/colonnes liées à OneDrive/Sync.
-*   **Action** : Indiquer à l'utilisateur de copier les secrets `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET` et `AZURE_TENANT_ID` depuis les réglages du projet **Doggy Contract Hub**.
-
-#### 2. Modification de la fonction de sauvegarde (`auto-backup`)
-Je vais enrichir la fonction `supabase/functions/auto-backup/index.ts` pour inclure la logique de synchronisation OneDrive.
-
-*   **Ajout des identifiants Azure** : Lecture des variables d'environnement.
-*   **Logiciel de Sync** :
-    *   Authentification via `client_credentials` (OAuth2 Microsoft).
-    *   Résolution du dossier de destination via un lien de partage (comme dans Doggy Hub).
-    *   Upload du fichier JSON généré vers OneDrive.
-*   **Gestion des erreurs** : Notification en cas d'échec de la synchronisation vers le Cloud Microsoft.
-
-#### 3. Configuration des Secrets
-Je vais demander à l'utilisateur d'ajouter les secrets suivants dans ce projet :
-*   `AZURE_CLIENT_ID`
-*   `AZURE_CLIENT_SECRET`
-*   `AZURE_TENANT_ID`
-*   `ONEDRIVE_BACKUP_LINK` (le lien de partage du dossier OneDrive/SharePoint où stocker les backups).
-
-#### 4. Suivi des sauvegardes (Optionnel)
-Ajouter une petite interface dans les **Paramètres** pour voir le statut de la dernière synchronisation OneDrive.
+### Resume
+Adapter la fonction de backup existante pour envoyer automatiquement les sauvegardes JSON vers un dossier OneDrive/SharePoint, en reprenant la methode d'authentification Microsoft Graph deja utilisee dans le projet Doggy Contract Hub.
 
 ---
 
-### Détails techniques
+### Etape 1 : Ajouter les secrets Azure
 
-#### Requête SQL demandée pour le projet précédent :
-Pour trouver dans quel projet et quelle table se trouvent les colonnes liées à OneDrive, l'utilisateur peut exécuter ceci dans l'éditeur SQL de ses autres projets :
-```sql
-SELECT table_name, column_name 
-FROM information_schema.columns 
-WHERE table_schema = 'public' 
-AND (column_name ILIKE '%onedrive%' OR column_name ILIKE '%sync%');
-```
+Quatre secrets a configurer dans ce projet :
 
-#### Architecture de la fonction `auto-backup` mise à jour :
+| Secret | Ou le trouver |
+|--------|---------------|
+| `AZURE_CLIENT_ID` | Portal Azure > App registrations > Votre app > Application (client) ID |
+| `AZURE_CLIENT_SECRET` | Portal Azure > App registrations > Votre app > Certificates & secrets |
+| `AZURE_TENANT_ID` | Portal Azure > App registrations > Votre app > Directory (tenant) ID |
+| `ONEDRIVE_BACKUP_LINK` | Lien de partage d'un dossier OneDrive/SharePoint avec droits d'ecriture |
+
+Vous pouvez aussi copier les 3 premiers depuis les secrets du projet **Doggy Contract Hub** si ce sont les memes identifiants Azure.
+
+---
+
+### Etape 2 : Mettre a jour la fonction `auto-backup`
+
+Modifier `supabase/functions/auto-backup/index.ts` pour :
+
+1. **Conserver** la logique existante (fetch des tables + upload dans le bucket `backups`)
+2. **Ajouter** apres l'upload au bucket :
+   - Authentification OAuth2 `client_credentials` aupres de Microsoft (meme code que Doggy Hub)
+   - Resolution du dossier partage via `encodeSharingUrl` + appel Graph API `/shares/{shareId}/driveItem`
+   - Upload du fichier JSON vers le dossier OneDrive via `PUT /drives/{driveId}/items/{folderId}:/{fileName}:/content`
+3. **Gestion d'erreur** : si l'upload OneDrive echoue, la reponse indiquera le succes du backup local mais l'echec de la synchro OneDrive
+
 ```text
-[Cron Job] -> [auto-backup Function]
-                  |
-                  |--> 1. Fetch tables data (JSON)
-                  |--> 2. Save to Lovable Cloud Storage (Bucket 'backups')
-                  |--> 3. Get Microsoft Graph Token (Azure AD)
-                  |--> 4. Upload JSON to OneDrive Folder
+Architecture :
+[auto-backup]
+    |
+    +--> Fetch all tables (people, planning_assignments, annual_events, weekly_tasks, custom_tasks, settings)
+    +--> Generate JSON
+    +--> Upload to Storage bucket "backups" (existant)
+    +--> Get Microsoft Graph access token (OAuth2 client_credentials)
+    +--> Resolve OneDrive folder from sharing link
+    +--> Upload JSON to OneDrive folder
+    +--> Return combined status
 ```
 
-#### Dépendances
-*   Identifiants Azure AD (Client ID, Client Secret, Tenant ID).
-*   Lien de partage OneDrive avec droits d'écriture.
+---
+
+### Etape 3 : Desactiver la verification JWT (deja fait dans config.toml si necessaire)
+
+La fonction sera appelable par un cron ou manuellement sans authentification utilisateur, comme c'est le cas actuellement.
+
+---
+
+### Details techniques
+
+Le code reutilisera les fonctions utilitaires suivantes du projet Doggy Contract Hub :
+- `encodeSharingUrl()` : encode le lien de partage pour l'API Graph
+- `getAccessToken()` : obtient un token via `client_credentials`
+- `getSharedFolderInfo()` : resout le driveId et folderId depuis le lien partage
+- `uploadFile()` : upload via PUT sur l'API Graph
+
+Le fichier JSON envoye sur OneDrive aura le meme nom que celui stocke dans le bucket : `backup-{timestamp}.json`.
+

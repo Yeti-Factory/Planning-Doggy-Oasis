@@ -1,34 +1,33 @@
 
 
-## Corrections post-migration
+## Ajout des couleurs dans le calendrier annuel
 
-### 1. Mettre a jour le message de statut
+### Objectif
 
-Le message "Donnees sauvegardees localement" en bas de la sidebar est trompeur. Il doit indiquer que les donnees sont partagees en temps reel.
+Appliquer le meme schema de couleurs que le fichier Excel au calendrier annuel, pour une meilleure lisibilite visuelle.
 
-**Fichier** : `src/components/AppSidebar.tsx`
-- Remplacer le texte "Donnees sauvegardees localement" par "Donnees partagees en temps reel"
+### Couleurs a appliquer
 
-### 2. Ajouter un indicateur de chargement
+| Element | Couleur | Variable CSS existante |
+|---------|---------|----------------------|
+| En-tete du mois (titre) | Bleu fonce #1F4E79 + texte blanc | `bg-primary text-primary-foreground` (deja en place) |
+| En-tete jours (L M M J V) | Bleu clair #D9E1F2 | `bg-weekband` / `week-band` |
+| En-tete samedi/dimanche | Gris #F2F2F2 | `bg-weekend` |
+| Cases weekend (samedi/dimanche) | Gris clair #F2F2F2 | `bg-weekend` |
+| Cases avec evenements | Fond jaune pastel #FFD966 (leger) | `bg-shift-morning/20` |
+| Cases vides (jours ouvrables) | Blanc | fond par defaut |
 
-Quand les donnees se chargent depuis la base, l'interface affiche brievement des selections vides, ce qui donne l'impression que rien n'a ete saisi. Un indicateur de chargement resoudra ce probleme.
+### Fichier a modifier
 
-**Fichier** : `src/components/MonthPlanning.tsx`
-- Lire l'etat `loading` du store `usePlanningStore`
-- Afficher un spinner ou skeleton pendant le chargement initial
+**`src/components/AnnualCalendar.tsx`** :
 
-### 3. Forcer le re-fetch a chaque visite (pas seulement au premier chargement)
+1. **En-tete des jours de la semaine** : Remplacer `bg-muted/30` par `bg-weekband` pour les jours L-V, et `bg-weekend` pour S-D
+2. **Cases weekend** : Remplacer `bg-muted/40` par `bg-weekend` pour les samedis et dimanches
+3. **Cases avec evenements** : Ajouter un fond jaune leger (`bg-shift-morning/20`) quand la case contient des evenements, pour les mettre en evidence visuellement
+4. **Pastilles d'evenements** : Ajouter un petit fond colore (`bg-shift-morning`) aux lignes de texte des evenements pour les rendre plus visibles
+5. **Cases vides (hors mois)** : Garder un fond gris tres leger pour les differencier
 
-Le guard `if (get().loaded) return;` dans `fetchAll` empeche le re-chargement des donnees apres la premiere connexion. Cela peut causer des problemes si un autre utilisateur a modifie les donnees entre-temps et que la subscription realtime a rate un evenement.
+### Resume
 
-**Fichier** : `src/hooks/usePlanningStore.ts`
-- Retirer ou assouplir le guard `loaded` pour permettre un rafraichissement periodique ou a chaque navigation de mois
-
-### Resume des fichiers a modifier
-
-| Fichier | Modification |
-|---------|-------------|
-| `src/components/AppSidebar.tsx` | Mettre a jour le message de statut |
-| `src/components/MonthPlanning.tsx` | Ajouter un indicateur de chargement |
-| `src/hooks/usePlanningStore.ts` | Assouplir le guard de chargement |
+Une seule modification dans `AnnualCalendar.tsx` pour remplacer les couleurs generiques (`bg-muted`) par les couleurs metier deja definies dans le CSS (`bg-weekband`, `bg-weekend`, `bg-shift-morning`).
 

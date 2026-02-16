@@ -59,7 +59,7 @@ function MonthGrid({ year, month, events, onDayClick }: MonthGridProps) {
                 key={i}
                 className={cn(
                   'border border-border px-1 py-1 text-center font-semibold',
-                  i >= 5 ? 'bg-muted/60' : 'bg-muted/30'
+                  i >= 5 ? 'bg-weekend' : 'bg-weekband'
                 )}
               >
                 {d}
@@ -86,7 +86,7 @@ function MonthGrid({ year, month, events, onDayClick }: MonthGridProps) {
                     onClick={() => onDayClick(dateKey, day.getDate(), month, year)}
                     className={cn(
                       'border border-border h-16 print:h-12 align-top p-0.5 cursor-pointer transition-colors hover:bg-accent/50 relative',
-                      weekend && 'bg-muted/40'
+                      weekend ? 'bg-weekend' : dayEvents.length > 0 && 'bg-shift-morning/20'
                     )}
                     style={{ width: '14.28%' }}
                   >
@@ -97,7 +97,7 @@ function MonthGrid({ year, month, events, onDayClick }: MonthGridProps) {
                       {dayEvents.map((evt, ei) => (
                         <div
                           key={ei}
-                          className="text-[9px] leading-tight truncate text-foreground print:text-[7px]"
+                          className="text-[9px] leading-tight truncate text-foreground print:text-[7px] bg-shift-morning/40 rounded px-0.5"
                           title={evt}
                         >
                           {evt}

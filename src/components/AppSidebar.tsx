@@ -10,10 +10,11 @@ import {
   ChevronRight,
   ClipboardList,
   FolderOpen,
+  CalendarDays,
 } from 'lucide-react';
 import logo from '@/assets/logo.png';
 
-type View = 'guide' | 'people' | 'settings' | 'tasks' | { type: 'month'; year: number; month: number };
+type View = 'guide' | 'people' | 'settings' | 'tasks' | { type: 'month'; year: number; month: number } | { type: 'annual'; year: number };
 
 interface AppSidebarProps {
   currentView: View;
@@ -40,7 +41,16 @@ export function AppSidebar({ currentView, onViewChange }: AppSidebarProps) {
     );
   };
 
+  const isAnnualActive = (year: number) => {
+    return (
+      typeof currentView === 'object' &&
+      currentView.type === 'annual' &&
+      currentView.year === year
+    );
+  };
+
   const isPlanningActive = typeof currentView === 'object' && currentView.type === 'month';
+  const isAnnualSectionActive = typeof currentView === 'object' && currentView.type === 'annual';
 
   return (
     <aside className="w-64 h-screen bg-sidebar text-sidebar-foreground flex flex-col shrink-0 border-r border-sidebar-border">
@@ -162,6 +172,46 @@ export function AppSidebar({ currentView, onViewChange }: AppSidebarProps) {
                     </div>
                   )}
                 </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Calendrier annuel */}
+        <div className="space-y-1">
+          <button
+            onClick={() => toggleSection('annual')}
+            className={cn(
+              'w-full flex items-center gap-2 px-3 py-2.5 text-sm font-semibold rounded-lg transition-colors',
+              isAnnualSectionActive
+                ? 'bg-sidebar-accent text-sidebar-foreground'
+                : 'hover:bg-sidebar-accent text-sidebar-foreground'
+            )}
+          >
+            {expandedSections.includes('annual') ? (
+              <ChevronDown className="w-4 h-4" />
+            ) : (
+              <ChevronRight className="w-4 h-4" />
+            )}
+            <CalendarDays className="w-4 h-4" />
+            Calendrier annuel
+          </button>
+
+          {expandedSections.includes('annual') && (
+            <div className="ml-6 space-y-0.5 animate-slide-in">
+              {years.map((year) => (
+                <button
+                  key={`annual-${year}`}
+                  onClick={() => onViewChange({ type: 'annual', year })}
+                  className={cn(
+                    'w-full text-left px-3 py-1.5 text-sm rounded-md transition-colors',
+                    isAnnualActive(year)
+                      ? 'bg-sidebar-primary text-sidebar-primary-foreground font-medium'
+                      : 'text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground'
+                  )}
+                >
+                  {year}
+                </button>
               ))}
             </div>
           )}

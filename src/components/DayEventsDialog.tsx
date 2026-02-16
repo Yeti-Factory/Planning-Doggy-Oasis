@@ -10,13 +10,25 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Plus, Trash2 } from 'lucide-react';
-import { useAnnualPlanningStore } from '@/hooks/useAnnualPlanningStore';
+import { useAnnualPlanningStore, AnnualEvent } from '@/hooks/useAnnualPlanningStore';
 import { MONTHS_FR } from '@/types/planning';
+import { cn } from '@/lib/utils';
+
+const EVENT_COLORS = [
+  { name: 'Jaune', value: '#FFD966' },
+  { name: 'Vert', value: '#92D050' },
+  { name: 'Bleu', value: '#5B9BD5' },
+  { name: 'Rose', value: '#FF6B8A' },
+  { name: 'Orange', value: '#FFA550' },
+  { name: 'Violet', value: '#B07DD0' },
+  { name: 'Gris', value: '#C0C0C0' },
+  { name: 'Aucune', value: null },
+];
 
 interface DayEventsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  dateKey: string; // YYYY-MM-DD
+  dateKey: string;
   dayNumber: number;
   month: number;
   year: number;
@@ -31,7 +43,7 @@ export function DayEventsDialog({
   year,
 }: DayEventsDialogProps) {
   const { events, setEvents } = useAnnualPlanningStore();
-  const [localEvents, setLocalEvents] = useState<string[]>([]);
+  const [localEvents, setLocalEvents] = useState<AnnualEvent[]>([]);
   const [newEvent, setNewEvent] = useState('');
 
   useEffect(() => {
@@ -44,7 +56,7 @@ export function DayEventsDialog({
   const handleAdd = () => {
     const trimmed = newEvent.trim();
     if (trimmed) {
-      setLocalEvents([...localEvents, trimmed]);
+      setLocalEvents([...localEvents, { text: trimmed, color: '#FFD966' }]);
       setNewEvent('');
     }
   };
@@ -53,14 +65,20 @@ export function DayEventsDialog({
     setLocalEvents(localEvents.filter((_, i) => i !== index));
   };
 
-  const handleUpdate = (index: number, value: string) => {
+  const handleUpdate = (index: number, text: string) => {
     const updated = [...localEvents];
-    updated[index] = value;
+    updated[index] = { ...updated[index], text };
+    setLocalEvents(updated);
+  };
+
+  const handleColorChange = (index: number, color: string | null) => {
+    const updated = [...localEvents];
+    updated[index] = { ...updated[index], color };
     setLocalEvents(updated);
   };
 
   const handleSave = () => {
-    const filtered = localEvents.filter((e) => e.trim() !== '');
+    const filtered = localEvents.filter((e) => e.text.trim() !== '');
     setEvents(dateKey, filtered);
     onOpenChange(false);
   };
@@ -84,22 +102,42 @@ export function DayEventsDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-2 max-h-60 overflow-y-auto">
+        <div className="space-y-3 max-h-60 overflow-y-auto">
           {localEvents.map((event, idx) => (
-            <div key={idx} className="flex items-center gap-2">
-              <Input
-                value={event}
-                onChange={(e) => handleUpdate(idx, e.target.value)}
-                className="flex-1"
-              />
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => handleRemove(idx)}
-                className="shrink-0 text-destructive hover:text-destructive"
-              >
-                <Trash2 className="w-4 h-4" />
-              </Button>
+            <div key={idx} className="space-y-1">
+              <div className="flex items-center gap-2">
+                <Input
+                  value={event.text}
+                  onChange={(e) => handleUpdate(idx, e.target.value)}
+                  className="flex-1"
+                />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => handleRemove(idx)}
+                  className="shrink-0 text-destructive hover:text-destructive"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              </div>
+              <div className="flex items-center gap-1.5 pl-1">
+                {EVENT_COLORS.map((c) => (
+                  <button
+                    key={c.name}
+                    type="button"
+                    title={c.name}
+                    onClick={() => handleColorChange(idx, c.value)}
+                    className={cn(
+                      'w-5 h-5 rounded-full border-2 transition-transform hover:scale-110 shrink-0',
+                      event.color === c.value
+                        ? 'border-foreground scale-110'
+                        : 'border-muted-foreground/30',
+                      !c.value && 'bg-background'
+                    )}
+                    style={c.value ? { backgroundColor: c.value } : undefined}
+                  />
+                ))}
+              </div>
             </div>
           ))}
         </div>

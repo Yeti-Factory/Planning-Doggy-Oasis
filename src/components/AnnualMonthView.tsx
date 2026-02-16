@@ -109,7 +109,7 @@ export function AnnualMonthView({ year, month }: AnnualMonthViewProps) {
                     onClick={() => handleDayClick(dateKey, day.getDate(), month, year)}
                     className={cn(
                       'border border-border h-28 print:h-20 align-top p-1.5 cursor-pointer transition-colors hover:bg-accent/50 relative',
-                      weekend ? 'bg-weekend' : dayEvents.length > 0 && 'bg-shift-morning/20'
+                      weekend && 'bg-weekend'
                     )}
                     style={{ width: '14.28%' }}
                   >
@@ -120,10 +120,11 @@ export function AnnualMonthView({ year, month }: AnnualMonthViewProps) {
                       {dayEvents.map((evt, ei) => (
                         <div
                           key={ei}
-                          className="text-xs leading-tight truncate text-foreground bg-shift-morning/40 rounded px-1 py-0.5"
-                          title={evt}
+                          className="text-xs leading-tight truncate text-foreground rounded px-1 py-0.5"
+                          style={{ backgroundColor: evt.color ? `${evt.color}66` : undefined }}
+                          title={evt.text}
                         >
-                          {evt}
+                          {evt.text}
                         </div>
                       ))}
                     </div>

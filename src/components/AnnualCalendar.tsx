@@ -13,7 +13,7 @@ const DAYS_SHORT = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
 interface MonthGridProps {
   year: number;
   month: number;
-  events: Record<string, string[]>;
+  events: Record<string, { text: string; color: string | null }[]>;
   onDayClick: (dateKey: string, day: number, month: number, year: number) => void;
 }
 
@@ -86,7 +86,7 @@ function MonthGrid({ year, month, events, onDayClick }: MonthGridProps) {
                     onClick={() => onDayClick(dateKey, day.getDate(), month, year)}
                     className={cn(
                       'border border-border h-16 print:h-12 align-top p-0.5 cursor-pointer transition-colors hover:bg-accent/50 relative',
-                      weekend ? 'bg-weekend' : dayEvents.length > 0 && 'bg-shift-morning/20'
+                      weekend && 'bg-weekend'
                     )}
                     style={{ width: '14.28%' }}
                   >
@@ -97,10 +97,11 @@ function MonthGrid({ year, month, events, onDayClick }: MonthGridProps) {
                       {dayEvents.map((evt, ei) => (
                         <div
                           key={ei}
-                          className="text-[9px] leading-tight truncate text-foreground print:text-[7px] bg-shift-morning/40 rounded px-0.5"
-                          title={evt}
+                          className="text-[9px] leading-tight truncate text-foreground print:text-[7px] rounded px-0.5"
+                          style={{ backgroundColor: evt.color ? `${evt.color}66` : undefined }}
+                          title={evt.text}
                         >
-                          {evt}
+                          {evt.text}
                         </div>
                       ))}
                     </div>

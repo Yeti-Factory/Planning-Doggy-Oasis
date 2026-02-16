@@ -6,13 +6,14 @@ import { PeopleManager } from '@/components/PeopleManager';
 import { SettingsPanel } from '@/components/SettingsPanel';
 import { UserGuide } from '@/components/UserGuide';
 import { WeeklyTaskPlanner } from '@/components/WeeklyTaskPlanner';
+import { LocalStorageMigration } from '@/components/LocalStorageMigration';
 import { Helmet } from 'react-helmet-async';
 import { usePlanningStore } from '@/hooks/usePlanningStore';
 import { useAnnualPlanningStore } from '@/hooks/useAnnualPlanningStore';
 import { useCustomTasksStore } from '@/hooks/useCustomTasksStore';
 import { useWeeklyTasksStore } from '@/hooks/useWeeklyTasksStore';
 
-type View = 'guide' | 'people' | 'settings' | 'tasks' | { type: 'month'; year: number; month: number } | { type: 'annual'; year: number };
+type View = 'guide' | 'people' | 'settings' | 'tasks' | 'migration' | { type: 'month'; year: number; month: number } | { type: 'annual'; year: number };
 
 const Index = () => {
   const [currentView, setCurrentView] = useState<View>({ type: 'month', year: 2026, month: 0 });
@@ -52,6 +53,9 @@ const Index = () => {
     }
     if (currentView === 'tasks') {
       return <WeeklyTaskPlanner />;
+    }
+    if (currentView === 'migration') {
+      return <LocalStorageMigration />;
     }
     if (typeof currentView === 'object' && currentView.type === 'month') {
       return <MonthPlanning year={currentView.year} month={currentView.month} />;

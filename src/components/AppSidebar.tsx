@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { MONTHS_FR } from '@/types/planning';
 import { cn } from '@/lib/utils';
 import {
@@ -11,10 +11,12 @@ import {
   ClipboardList,
   FolderOpen,
   CalendarDays,
+  Upload,
 } from 'lucide-react';
 import logo from '@/assets/logo.png';
+import { hasLocalDataToMigrate } from '@/components/LocalStorageMigration';
 
-type View = 'guide' | 'people' | 'settings' | 'tasks' | { type: 'month'; year: number; month: number } | { type: 'annual'; year: number };
+type View = 'guide' | 'people' | 'settings' | 'tasks' | 'migration' | { type: 'month'; year: number; month: number } | { type: 'annual'; year: number };
 
 interface AppSidebarProps {
   currentView: View;
@@ -24,6 +26,11 @@ interface AppSidebarProps {
 export function AppSidebar({ currentView, onViewChange }: AppSidebarProps) {
   const currentYear = new Date().getFullYear();
   const [expandedSections, setExpandedSections] = useState<string[]>(['planning', '2026']);
+  const [showMigration, setShowMigration] = useState(false);
+
+  useEffect(() => {
+    setShowMigration(hasLocalDataToMigrate());
+  }, []);
   const years = [2026, 2027, 2028];
 
   const toggleSection = (section: string) => {
@@ -234,6 +241,23 @@ export function AppSidebar({ currentView, onViewChange }: AppSidebarProps) {
           Planificateur de tâches
         </button>
       </nav>
+
+      {/* Migration button */}
+      {showMigration && (
+        <div className="p-2">
+          <button
+            onClick={() => onViewChange('migration')}
+            className={cn(
+              'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
+              'bg-shift-morning text-foreground hover:bg-shift-morning/80',
+              currentView === 'migration' && 'ring-2 ring-primary'
+            )}
+          >
+            <Upload className="w-4 h-4" />
+            Importer données locales
+          </button>
+        </div>
+      )}
 
       {/* Footer */}
       <div className="p-4 border-t border-sidebar-border text-xs text-sidebar-foreground/50 text-center">

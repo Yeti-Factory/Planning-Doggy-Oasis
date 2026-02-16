@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       annual_events: {
         Row: {
+          color: string | null
           created_at: string
           date: string
           event_text: string
@@ -23,6 +24,7 @@ export type Database = {
           position: number
         }
         Insert: {
+          color?: string | null
           created_at?: string
           date: string
           event_text: string
@@ -30,6 +32,7 @@ export type Database = {
           position?: number
         }
         Update: {
+          color?: string | null
           created_at?: string
           date?: string
           event_text?: string

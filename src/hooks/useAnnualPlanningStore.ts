@@ -1,15 +1,20 @@
 import { create } from 'zustand';
 import { supabase } from '@/integrations/supabase/client';
 
+export interface AnnualEvent {
+  text: string;
+  color: string | null;
+}
+
 interface AnnualPlanningState {
-  events: Record<string, string[]>;
+  events: Record<string, AnnualEvent[]>;
   loading: boolean;
   loaded: boolean;
   fetchEvents: () => Promise<void>;
-  addEvent: (dateKey: string, text: string) => void;
+  addEvent: (dateKey: string, text: string, color?: string | null) => void;
   updateEvent: (dateKey: string, index: number, text: string) => void;
   removeEvent: (dateKey: string, index: number) => void;
-  setEvents: (dateKey: string, events: string[]) => void;
+  setEvents: (dateKey: string, events: AnnualEvent[]) => void;
   subscribeRealtime: () => () => void;
 }
 
@@ -33,28 +38,27 @@ export const useAnnualPlanningStore = create<AnnualPlanningState>()((set, get) =
       return;
     }
 
-    const events: Record<string, string[]> = {};
+    const events: Record<string, AnnualEvent[]> = {};
     for (const row of data || []) {
       if (!events[row.date]) events[row.date] = [];
-      events[row.date].push(row.event_text);
+      events[row.date].push({ text: row.event_text, color: (row as any).color ?? null });
     }
     set({ events, loading: false, loaded: true });
   },
 
-  addEvent: (dateKey, text) => {
+  addEvent: (dateKey, text, color = null) => {
     const current = get().events[dateKey] || [];
     const position = current.length;
     
-    // Optimistic update
     set((state) => ({
       events: {
         ...state.events,
-        [dateKey]: [...current, text],
+        [dateKey]: [...current, { text, color }],
       },
     }));
 
     supabase.from('annual_events')
-      .insert({ date: dateKey, event_text: text, position })
+      .insert({ date: dateKey, event_text: text, position, color } as any)
       .then(({ error }) => {
         if (error) console.error('Error adding event:', error);
       });
@@ -63,11 +67,10 @@ export const useAnnualPlanningStore = create<AnnualPlanningState>()((set, get) =
   updateEvent: (dateKey, index, text) => {
     set((state) => {
       const current = [...(state.events[dateKey] || [])];
-      current[index] = text;
+      current[index] = { ...current[index], text };
       return { events: { ...state.events, [dateKey]: current } };
     });
 
-    // Update in DB: find by date + position
     supabase.from('annual_events')
       .update({ event_text: text })
       .eq('date', dateKey)
@@ -89,15 +92,12 @@ export const useAnnualPlanningStore = create<AnnualPlanningState>()((set, get) =
     }
     set({ events: newEvents });
 
-    // Delete from DB and re-index positions
     (async () => {
-      // Delete by date + position
       await supabase.from('annual_events')
         .delete()
         .eq('date', dateKey)
         .eq('position', index);
       
-      // Re-index remaining events
       const remaining = current;
       for (let i = index; i < remaining.length; i++) {
         await supabase.from('annual_events')
@@ -117,19 +117,19 @@ export const useAnnualPlanningStore = create<AnnualPlanningState>()((set, get) =
     }
     set({ events: newEventsMap });
 
-    // Replace all events for this date in DB
     (async () => {
       await supabase.from('annual_events')
         .delete()
         .eq('date', dateKey);
       
       if (events.length > 0) {
-        const rows = events.map((text, i) => ({
+        const rows = events.map((evt, i) => ({
           date: dateKey,
-          event_text: text,
+          event_text: evt.text,
           position: i,
+          color: evt.color,
         }));
-        await supabase.from('annual_events').insert(rows);
+        await supabase.from('annual_events').insert(rows as any);
       }
     })();
   },
@@ -141,7 +141,6 @@ export const useAnnualPlanningStore = create<AnnualPlanningState>()((set, get) =
         'postgres_changes',
         { event: '*', schema: 'public', table: 'annual_events' },
         () => {
-          // Refetch all events on any change
           set({ loaded: false });
           get().fetchEvents();
         }

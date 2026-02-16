@@ -1,0 +1,1 @@
+ALTER TABLE public.annual_events ADD COLUMN color text DEFAULT NULL;

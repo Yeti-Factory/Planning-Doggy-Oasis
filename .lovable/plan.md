@@ -1,35 +1,17 @@
 
 
-## Implementation : Sauvegarde automatique vers OneDrive
+## Mise a jour du lien de sauvegarde OneDrive
 
-### Etape 1 : Ajouter les 4 secrets
+### Probleme identifie
+Le secret `ONEDRIVE_BACKUP_LINK` contient un lien SharePoint qui pointe vers le dossier d'une autre application. Les sauvegardes sont donc envoyees au mauvais endroit.
 
-Configurer les secrets suivants (valeurs deja fournies par l'utilisateur) :
-- `AZURE_CLIENT_ID`
-- `AZURE_TENANT_ID`
-- `AZURE_CLIENT_SECRET`
-- `ONEDRIVE_BACKUP_LINK`
+### Action a realiser
+1. Mettre a jour le secret `ONEDRIVE_BACKUP_LINK` avec le bon lien :
+   `https://yetifactory.sharepoint.com/:f:/s/YetiTeam-YetiPartage/IgBOZ0RZTH3rQ5HR9zDQd3w-ASElLHuK2mLn13tm9La9NNA?e=vjDpIm`
 
-### Etape 2 : Mettre a jour la fonction `auto-backup`
-
-Reecrire `supabase/functions/auto-backup/index.ts` pour :
-
-1. Conserver la logique existante (fetch des 6 tables + upload bucket `backups`)
-2. Ajouter la synchronisation OneDrive :
-   - Authentification OAuth2 `client_credentials` aupres de Microsoft
-   - Resolution du dossier SharePoint via encodage base64 du lien de partage
-   - Upload du JSON via PUT sur l'API Graph
-
-### Etape 3 : Deployer et tester
-
-- Deploiement automatique de la fonction
-- Test via appel direct pour verifier l'apparition du fichier dans le dossier SharePoint
+2. Relancer un test de la fonction `auto-backup` pour verifier que le fichier arrive bien dans le bon dossier SharePoint.
 
 ### Details techniques
-
-La fonction reutilisera la meme logique que le projet Doggy Contract Hub :
-- `encodeSharingUrl()` : encode le lien en format `u!base64`
-- Appel `POST` vers `https://login.microsoftonline.com/{tenant}/oauth2/v2.0/token`
-- Resolution via `GET https://graph.microsoft.com/v1.0/shares/{shareId}/driveItem`
-- Upload via `PUT https://graph.microsoft.com/v1.0/drives/{driveId}/items/{folderId}:/{fileName}:/content`
+- Aucune modification de code n'est necessaire, le code de la Edge Function `auto-backup` utilise deja le secret `ONEDRIVE_BACKUP_LINK` pour resoudre le dossier cible.
+- Seule la valeur du secret doit etre corrigee.
 

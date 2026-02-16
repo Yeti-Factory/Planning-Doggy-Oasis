@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { getYear } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { usePlanningStore } from '@/hooks/usePlanningStore';
@@ -62,7 +62,11 @@ export function WeeklyTaskPlanner({ initialWeekStart }: WeeklyTaskPlannerProps) 
   const [goToYear, setGoToYear] = useState(getYear(new Date()).toString());
   const [goToWeekOpen, setGoToWeekOpen] = useState(false);
   const { people, getAssignment, getPersonById } = usePlanningStore();
-  const { setTaskAssignment, getTaskAssignment, clearWeekTasks, copyWeekTasks } = useWeeklyTasksStore();
+  const { setTaskAssignment, getTaskAssignment, clearWeekTasks, copyWeekTasks, fetchWeekTasks } = useWeeklyTasksStore();
+
+  useEffect(() => {
+    fetchWeekTasks(weekStartDate);
+  }, [weekStartDate, fetchWeekTasks]);
 
   const weekDates = useMemo(() => {
     return getWeekDates(weekStartDate);

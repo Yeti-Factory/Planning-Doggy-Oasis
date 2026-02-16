@@ -1,67 +1,34 @@
 
 
-## Migration vers une base de donnees partagee (Supabase)
+## Corrections post-migration
 
-### Probleme
+### 1. Mettre a jour le message de statut
 
-Actuellement, toutes les donnees de l'application sont stockees en `localStorage` dans le navigateur de chaque utilisateur. Cela signifie que les donnees saisies par "Admin metropole" ne sont visibles que sur son propre navigateur. Aucune synchronisation n'existe entre les differents postes.
+Le message "Donnees sauvegardees localement" en bas de la sidebar est trompeur. Il doit indiquer que les donnees sont partagees en temps reel.
 
-4 stores concernes :
-- `planning-storage` : affectations de personnel (planning mensuel)
-- `annual-planning-storage` : calendrier annuel
-- `weekly-tasks-storage` : taches hebdomadaires
-- `custom-tasks-storage` : taches personnalisees
+**Fichier** : `src/components/AppSidebar.tsx`
+- Remplacer le texte "Donnees sauvegardees localement" par "Donnees partagees en temps reel"
 
-### Solution proposee
+### 2. Ajouter un indicateur de chargement
 
-Migrer la persistance des donnees depuis `localStorage` vers **Supabase** (base de donnees PostgreSQL hebergee). Cela permettra a tous les utilisateurs de voir les memes donnees en temps reel.
+Quand les donnees se chargent depuis la base, l'interface affiche brievement des selections vides, ce qui donne l'impression que rien n'a ete saisi. Un indicateur de chargement resoudra ce probleme.
 
-### Etapes de la migration
+**Fichier** : `src/components/MonthPlanning.tsx`
+- Lire l'etat `loading` du store `usePlanningStore`
+- Afficher un spinner ou skeleton pendant le chargement initial
 
-#### 1. Activer Supabase (Lovable Cloud)
+### 3. Forcer le re-fetch a chaque visite (pas seulement au premier chargement)
 
-Creer un projet Supabase connecte a l'application via Lovable Cloud.
+Le guard `if (get().loaded) return;` dans `fetchAll` empeche le re-chargement des donnees apres la premiere connexion. Cela peut causer des problemes si un autre utilisateur a modifie les donnees entre-temps et que la subscription realtime a rate un evenement.
 
-#### 2. Creer les tables dans Supabase
+**Fichier** : `src/hooks/usePlanningStore.ts`
+- Retirer ou assouplir le guard `loaded` pour permettre un rafraichissement periodique ou a chaque navigation de mois
 
-| Table | Description | Colonnes principales |
-|-------|------------|---------------------|
-| `planning_assignments` | Affectations du planning mensuel | `date`, `slot` (morning/afternoon/fullDay), `slot_index`, `person_id` |
-| `people` | Liste des personnes | `id`, `name`, `category`, `code` |
-| `annual_events` | Evenements du calendrier annuel | `date`, `event_text`, `position` |
-| `weekly_tasks` | Taches hebdomadaires | `week_start`, `person_id`, `task_id`, `slot`, `value` |
-| `custom_tasks` | Taches personnalisees | `id`, `name` |
-| `settings` | Parametres (heures matin/apres-midi) | `key`, `value` |
+### Resume des fichiers a modifier
 
-#### 3. Modifier les stores Zustand
-
-Remplacer le middleware `persist` (localStorage) par des appels a Supabase via `@tanstack/react-query` :
-- Charger les donnees depuis Supabase au demarrage
-- Sauvegarder chaque modification dans Supabase
-- Garder un cache local pour la reactivite de l'interface
-
-#### 4. Synchronisation temps reel (optionnel mais recommande)
-
-Activer les Realtime subscriptions de Supabase pour que les modifications d'un utilisateur apparaissent immediatement sur les ecrans des autres.
-
-### Impact sur les utilisateurs existants
-
-- Les donnees actuellement dans le localStorage des differents navigateurs ne seront PAS migrees automatiquement
-- Il faudra re-saisir les donnees ou exporter/importer manuellement
-- Les donnees initiales du fichier Excel (calendrier annuel) seront reinjectees dans Supabase
-
-### Estimation de la complexite
-
-Ce chantier est **consequent** car il touche tous les stores de l'application. Il est recommande de proceder par etapes :
-
-1. **Phase 1** : Migrer le calendrier annuel (`annual_events`) -- c'est le plus urgent vu le probleme signale
-2. **Phase 2** : Migrer le planning mensuel (`planning_assignments` + `people`)
-3. **Phase 3** : Migrer les taches hebdomadaires et personnalisees
-4. **Phase 4** : Ajouter la synchronisation temps reel
-
-### Question prealable
-
-Avant de commencer, il faut activer Supabase sur le projet. Souhaitez-vous :
-- **Lovable Cloud** (recommande, pas besoin de compte externe)
-- **Supabase externe** (vous gerez votre propre projet Supabase)
+| Fichier | Modification |
+|---------|-------------|
+| `src/components/AppSidebar.tsx` | Mettre a jour le message de statut |
+| `src/components/MonthPlanning.tsx` | Ajouter un indicateur de chargement |
+| `src/hooks/usePlanningStore.ts` | Assouplir le guard de chargement |
 

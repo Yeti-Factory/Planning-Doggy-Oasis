@@ -1,17 +1,15 @@
 
 
-## Mise a jour du lien de sauvegarde OneDrive
+## Mise a jour du secret ONEDRIVE_BACKUP_LINK
 
-### Probleme identifie
-Le secret `ONEDRIVE_BACKUP_LINK` contient un lien SharePoint qui pointe vers le dossier d'une autre application. Les sauvegardes sont donc envoyees au mauvais endroit.
+### Action
+Remplacer la valeur du secret `ONEDRIVE_BACKUP_LINK` par le nouveau lien :
+`https://yetifactory.sharepoint.com/:f:/s/YetiTeam-YetiPartage/IgBOZ0RZTH3rQ5HR9zDQd3w-ASElLHuK2mLn13tm9La9NNA?e=HNTAGc`
 
-### Action a realiser
-1. Mettre a jour le secret `ONEDRIVE_BACKUP_LINK` avec le bon lien :
-   `https://yetifactory.sharepoint.com/:f:/s/YetiTeam-YetiPartage/IgBOZ0RZTH3rQ5HR9zDQd3w-ASElLHuK2mLn13tm9La9NNA?e=vjDpIm`
-
-2. Relancer un test de la fonction `auto-backup` pour verifier que le fichier arrive bien dans le bon dossier SharePoint.
+### Verification
+Relancer la fonction `auto-backup` pour confirmer que le fichier JSON arrive dans le bon dossier SharePoint.
 
 ### Details techniques
-- Aucune modification de code n'est necessaire, le code de la Edge Function `auto-backup` utilise deja le secret `ONEDRIVE_BACKUP_LINK` pour resoudre le dossier cible.
-- Seule la valeur du secret doit etre corrigee.
+- Aucune modification de code requise
+- Seule la valeur du secret est mise a jour
 

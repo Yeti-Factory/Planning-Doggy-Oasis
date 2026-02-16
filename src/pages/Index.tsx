@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { AppSidebar } from '@/components/AppSidebar';
 import { AnnualCalendar } from '@/components/AnnualCalendar';
+import { AnnualMonthView } from '@/components/AnnualMonthView';
 import { MonthPlanning } from '@/components/MonthPlanning';
 import { PeopleManager } from '@/components/PeopleManager';
 import { SettingsPanel } from '@/components/SettingsPanel';
@@ -13,7 +14,7 @@ import { useAnnualPlanningStore } from '@/hooks/useAnnualPlanningStore';
 import { useCustomTasksStore } from '@/hooks/useCustomTasksStore';
 import { useWeeklyTasksStore } from '@/hooks/useWeeklyTasksStore';
 
-type View = 'guide' | 'people' | 'settings' | 'tasks' | 'migration' | { type: 'month'; year: number; month: number } | { type: 'annual'; year: number };
+type View = 'guide' | 'people' | 'settings' | 'tasks' | 'migration' | { type: 'month'; year: number; month: number } | { type: 'annual'; year: number } | { type: 'annual-month'; year: number; month: number };
 
 const Index = () => {
   const [currentView, setCurrentView] = useState<View>({ type: 'month', year: 2026, month: 0 });
@@ -62,6 +63,9 @@ const Index = () => {
     }
     if (typeof currentView === 'object' && currentView.type === 'annual') {
       return <AnnualCalendar year={currentView.year} />;
+    }
+    if (typeof currentView === 'object' && currentView.type === 'annual-month') {
+      return <AnnualMonthView year={currentView.year} month={currentView.month} />;
     }
     return null;
   };

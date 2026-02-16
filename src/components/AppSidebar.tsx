@@ -16,7 +16,7 @@ import {
 import logo from '@/assets/logo.png';
 import { hasLocalDataToMigrate } from '@/components/LocalStorageMigration';
 
-type View = 'guide' | 'people' | 'settings' | 'tasks' | 'migration' | { type: 'month'; year: number; month: number } | { type: 'annual'; year: number };
+type View = 'guide' | 'people' | 'settings' | 'tasks' | 'migration' | { type: 'month'; year: number; month: number } | { type: 'annual'; year: number } | { type: 'annual-month'; year: number; month: number };
 
 interface AppSidebarProps {
   currentView: View;
@@ -51,13 +51,22 @@ export function AppSidebar({ currentView, onViewChange }: AppSidebarProps) {
   const isAnnualActive = (year: number) => {
     return (
       typeof currentView === 'object' &&
-      currentView.type === 'annual' &&
+      (currentView.type === 'annual' || currentView.type === 'annual-month') &&
       currentView.year === year
     );
   };
 
   const isPlanningActive = typeof currentView === 'object' && currentView.type === 'month';
-  const isAnnualSectionActive = typeof currentView === 'object' && currentView.type === 'annual';
+  const isAnnualMonthActive = (year: number, month: number) => {
+    return (
+      typeof currentView === 'object' &&
+      currentView.type === 'annual-month' &&
+      currentView.year === year &&
+      currentView.month === month
+    );
+  };
+
+  const isAnnualSectionActive = typeof currentView === 'object' && (currentView.type === 'annual' || currentView.type === 'annual-month');
 
   return (
     <aside className="w-64 h-screen bg-sidebar text-sidebar-foreground flex flex-col shrink-0 border-r border-sidebar-border">
@@ -205,20 +214,57 @@ export function AppSidebar({ currentView, onViewChange }: AppSidebarProps) {
           </button>
 
           {expandedSections.includes('annual') && (
-            <div className="ml-6 space-y-0.5 animate-slide-in">
+            <div className="ml-3 space-y-0.5 animate-slide-in">
               {years.map((year) => (
-                <button
-                  key={`annual-${year}`}
-                  onClick={() => onViewChange({ type: 'annual', year })}
-                  className={cn(
-                    'w-full text-left px-3 py-1.5 text-sm rounded-md transition-colors',
-                    isAnnualActive(year)
-                      ? 'bg-sidebar-primary text-sidebar-primary-foreground font-medium'
-                      : 'text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground'
+                <div key={`annual-${year}`}>
+                  <button
+                    onClick={() => toggleSection(`annual-${year}`)}
+                    className={cn(
+                      'w-full flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-md transition-colors',
+                      isAnnualActive(year)
+                        ? 'bg-sidebar-accent/50 text-sidebar-foreground'
+                        : 'hover:bg-sidebar-accent/50 text-sidebar-foreground/90'
+                    )}
+                  >
+                    {expandedSections.includes(`annual-${year}`) ? (
+                      <ChevronDown className="w-3 h-3" />
+                    ) : (
+                      <ChevronRight className="w-3 h-3" />
+                    )}
+                    <FolderOpen className="w-3.5 h-3.5" />
+                    {year}
+                  </button>
+
+                  {expandedSections.includes(`annual-${year}`) && (
+                    <div className="ml-5 mt-0.5 space-y-0.5 animate-slide-in">
+                      <button
+                        onClick={() => onViewChange({ type: 'annual', year })}
+                        className={cn(
+                          'w-full text-left px-3 py-1.5 text-sm rounded-md transition-colors font-medium',
+                          typeof currentView === 'object' && currentView.type === 'annual' && currentView.year === year
+                            ? 'bg-sidebar-primary text-sidebar-primary-foreground'
+                            : 'text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground'
+                        )}
+                      >
+                        Vue annuelle
+                      </button>
+                      {MONTHS_FR.map((monthName, idx) => (
+                        <button
+                          key={`annual-${year}-${idx}`}
+                          onClick={() => onViewChange({ type: 'annual-month', year, month: idx })}
+                          className={cn(
+                            'w-full text-left px-3 py-1.5 text-sm rounded-md transition-colors',
+                            isAnnualMonthActive(year, idx)
+                              ? 'bg-sidebar-primary text-sidebar-primary-foreground font-medium'
+                              : 'text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground'
+                          )}
+                        >
+                          {monthName}
+                        </button>
+                      ))}
+                    </div>
                   )}
-                >
-                  {year}
-                </button>
+                </div>
               ))}
             </div>
           )}

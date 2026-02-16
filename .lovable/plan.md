@@ -1,66 +1,42 @@
 
+### Synchronisation de la sauvegarde automatique avec OneDrive/SharePoint
 
-## Sauvegarde automatique vers OneDrive
+Ce plan vise à mettre à jour la fonction de sauvegarde automatique (backend) pour qu'elle envoie une copie de chaque sauvegarde JSON directement dans votre dossier SharePoint, en plus de la conservation locale.
 
-### Resume
-Adapter la fonction de backup existante pour envoyer automatiquement les sauvegardes JSON vers un dossier OneDrive/SharePoint, en reprenant la methode d'authentification Microsoft Graph deja utilisee dans le projet Doggy Contract Hub.
+#### Étape 1 : Configuration des secrets (Default Mode)
+Une fois le plan approuvé, j'ajouterai les secrets suivants dans votre environnement Lovable Cloud (ces valeurs ont été fournies dans la conversation) :
+- `AZURE_CLIENT_ID` : `10e4d18b-c501-4f4a-be76-17e4dc036ee8`
+- `AZURE_TENANT_ID` : `2e5b143a-0da3-4c4e-b161-10e25e2a2dc0`
+- `AZURE_CLIENT_SECRET` : `ff195572-7708-4bf5-95bc-ed480b12b37a`
+- `ONEDRIVE_BACKUP_LINK` : `https://yetifactory.sharepoint.com/:f:/s/YetiTeam-YetiPartage/IgBOZ0RZTH3rQ5HR9zDQd3w-ASElLHuK2mLn13tm9La9NNA?e=bEbtXx`
 
----
-
-### Etape 1 : Ajouter les secrets Azure
-
-Quatre secrets a configurer dans ce projet :
-
-| Secret | Ou le trouver |
-|--------|---------------|
-| `AZURE_CLIENT_ID` | Portal Azure > App registrations > Votre app > Application (client) ID |
-| `AZURE_CLIENT_SECRET` | Portal Azure > App registrations > Votre app > Certificates & secrets |
-| `AZURE_TENANT_ID` | Portal Azure > App registrations > Votre app > Directory (tenant) ID |
-| `ONEDRIVE_BACKUP_LINK` | Lien de partage d'un dossier OneDrive/SharePoint avec droits d'ecriture |
-
-Vous pouvez aussi copier les 3 premiers depuis les secrets du projet **Doggy Contract Hub** si ce sont les memes identifiants Azure.
-
----
-
-### Etape 2 : Mettre a jour la fonction `auto-backup`
-
-Modifier `supabase/functions/auto-backup/index.ts` pour :
-
-1. **Conserver** la logique existante (fetch des tables + upload dans le bucket `backups`)
-2. **Ajouter** apres l'upload au bucket :
-   - Authentification OAuth2 `client_credentials` aupres de Microsoft (meme code que Doggy Hub)
-   - Resolution du dossier partage via `encodeSharingUrl` + appel Graph API `/shares/{shareId}/driveItem`
-   - Upload du fichier JSON vers le dossier OneDrive via `PUT /drives/{driveId}/items/{folderId}:/{fileName}:/content`
-3. **Gestion d'erreur** : si l'upload OneDrive echoue, la reponse indiquera le succes du backup local mais l'echec de la synchro OneDrive
-
-```text
-Architecture :
-[auto-backup]
-    |
-    +--> Fetch all tables (people, planning_assignments, annual_events, weekly_tasks, custom_tasks, settings)
-    +--> Generate JSON
-    +--> Upload to Storage bucket "backups" (existant)
-    +--> Get Microsoft Graph access token (OAuth2 client_credentials)
-    +--> Resolve OneDrive folder from sharing link
-    +--> Upload JSON to OneDrive folder
-    +--> Return combined status
+#### Étape 2 : Configuration du backend (`supabase/config.toml`)
+Mise à jour de la configuration pour désactiver la vérification JWT sur la fonction `auto-backup`, permettant son exécution par des déclencheurs externes (comme un cron de sauvegarde) :
+```toml
+[functions.auto-backup]
+verify_jwt = false
 ```
 
----
+#### Étape 3 : Mise à jour de la fonction `auto-backup` (`supabase/functions/auto-backup/index.ts`)
+Réécriture complète de la fonction pour intégrer la logique Microsoft Graph :
+- **Extraction des données** : Récupération du contenu des tables (`people`, `planning_assignments`, etc.).
+- **Génération JSON** : Création du fichier de sauvegarde avec un horodatage précis.
+- **Sauvegarde locale** : Envoi dans le bucket de stockage `backups`.
+- **Authentification Microsoft** : Utilisation du flux `client_credentials` avec vos identifiants Azure pour obtenir un jeton d'accès Graph API.
+- **Résolution du dossier** : Identification automatique du dossier SharePoint cible à partir de votre lien de partage.
+- **Upload OneDrive** : Envoi direct du fichier JSON vers SharePoint via l'API Graph.
+- **Gestion d'erreurs** : Retour d'un statut combiné (Succès local + Succès/Échec OneDrive).
 
-### Etape 3 : Desactiver la verification JWT (deja fait dans config.toml si necessaire)
+#### Étape 4 : Déploiement et Test
+- Déploiement automatique de la fonction mise à jour.
+- Test de la fonction via un appel direct pour vérifier que le fichier apparaît bien dans votre dossier SharePoint.
 
-La fonction sera appelable par un cron ou manuellement sans authentification utilisateur, comme c'est le cas actuellement.
+### Détails techniques
+- La fonction utilisera l'API Microsoft Graph v1.0.
+- L'URL de partage est encodée au format `u!base64` pour permettre à l'API `shares` de résoudre le `driveId` et le `folderId`.
+- Le contenu est envoyé via une requête `PUT` sur le point de terminaison `/content` de l'item OneDrive.
 
----
-
-### Details techniques
-
-Le code reutilisera les fonctions utilitaires suivantes du projet Doggy Contract Hub :
-- `encodeSharingUrl()` : encode le lien de partage pour l'API Graph
-- `getAccessToken()` : obtient un token via `client_credentials`
-- `getSharedFolderInfo()` : resout le driveId et folderId depuis le lien partage
-- `uploadFile()` : upload via PUT sur l'API Graph
-
-Le fichier JSON envoye sur OneDrive aura le meme nom que celui stocke dans le bucket : `backup-{timestamp}.json`.
+#### Sécurité
+- Vos secrets sont stockés de manière sécurisée dans Lovable Cloud et ne sont jamais exposés dans le code source frontal.
+- L'utilisation du `SERVICE_ROLE_KEY` au niveau du backend garantit que la sauvegarde peut lire toutes les tables sans restriction de politiques RLS.
 

@@ -1,42 +1,67 @@
 
 
-## Pre-remplir le calendrier annuel avec les donnees du fichier Excel
+## Migration vers une base de donnees partagee (Supabase)
 
-### Description
+### Probleme
 
-Injecter les evenements extraits du fichier Excel "planning annuel 2026" comme donnees initiales dans le store du calendrier annuel. Les donnees seront chargees automatiquement au premier lancement (si le localStorage est vide).
+Actuellement, toutes les donnees de l'application sont stockees en `localStorage` dans le navigateur de chaque utilisateur. Cela signifie que les donnees saisies par "Admin metropole" ne sont visibles que sur son propre navigateur. Aucune synchronisation n'existe entre les differents postes.
 
-### Approche technique
+4 stores concernes :
+- `planning-storage` : affectations de personnel (planning mensuel)
+- `annual-planning-storage` : calendrier annuel
+- `weekly-tasks-storage` : taches hebdomadaires
+- `custom-tasks-storage` : taches personnalisees
 
-**Fichier : `src/hooks/useAnnualPlanningStore.ts`**
+### Solution proposee
 
-Modifier le store pour inclure les donnees initiales extraites du fichier Excel. La propriete `events` du store sera initialisee avec un objet contenant tous les evenements par date (format `YYYY-MM-DD`).
+Migrer la persistance des donnees depuis `localStorage` vers **Supabase** (base de donnees PostgreSQL hebergee). Cela permettra a tous les utilisateurs de voir les memes donnees en temps reel.
 
-Le middleware `persist` de Zustand conservera les modifications de l'utilisateur : les donnees initiales ne seront chargees qu'a la premiere utilisation (avant toute sauvegarde en localStorage).
+### Etapes de la migration
 
-### Donnees extraites (resume par mois)
+#### 1. Activer Supabase (Lovable Cloud)
 
-- **Janvier** : 22 jours avec evenements (ehpad, apadag, fourriere, visites, EPICERIE, transferts, mediation ecole, scouts, lycee...)
-- **Fevrier** : 20 jours (AGAV, maison Nobel/Anse, adapei, tikaz, visites, transferts...)
-- **Mars** : 17 jours (touchatout, stagiaire oceane et kenny, veto benoit...)
-- **Avril** : 12 jours (marche aux plantes, apadag, transfert spa...)
-- **Mai** : 11 jours (nombreuses visites 6 mois, pantera, transfert spa...)
-- **Juin** : 7 jours (soya, apadag, awara...)
-- **Juillet** : 10 jours (nola, tulear, youbi, mojo...)
-- **Aout** : 12 jours (cookie, pasto, happy, malo, gao, pita...)
-- **Septembre** : 9 jours (limbe, catane, goya...)
-- **Octobre** : 10 jours (victoria, split, dagu beijing...)
-- **Novembre** : 13 jours (monroe, lexie, labra, macou, zagreb, medan...)
-- **Decembre** : 6 jours (ehpad, ime, transfert spa...)
+Creer un projet Supabase connecte a l'application via Lovable Cloud.
 
-### Fichier modifie
+#### 2. Creer les tables dans Supabase
 
-| Fichier | Modification |
-|---------|-------------|
-| `src/hooks/useAnnualPlanningStore.ts` | Ajouter les ~150 entrees d'evenements comme etat initial par defaut du store |
+| Table | Description | Colonnes principales |
+|-------|------------|---------------------|
+| `planning_assignments` | Affectations du planning mensuel | `date`, `slot` (morning/afternoon/fullDay), `slot_index`, `person_id` |
+| `people` | Liste des personnes | `id`, `name`, `category`, `code` |
+| `annual_events` | Evenements du calendrier annuel | `date`, `event_text`, `position` |
+| `weekly_tasks` | Taches hebdomadaires | `week_start`, `person_id`, `task_id`, `slot`, `value` |
+| `custom_tasks` | Taches personnalisees | `id`, `name` |
+| `settings` | Parametres (heures matin/apres-midi) | `key`, `value` |
 
-### Point d'attention
+#### 3. Modifier les stores Zustand
 
-- Les donnees initiales sont ecrasees des que l'utilisateur modifie quoi que ce soit (le localStorage prend le relais)
-- Les fautes d'orthographe du fichier Excel original sont conservees telles quelles (ex: "visiste", "ehpas", "stransfert")
+Remplacer le middleware `persist` (localStorage) par des appels a Supabase via `@tanstack/react-query` :
+- Charger les donnees depuis Supabase au demarrage
+- Sauvegarder chaque modification dans Supabase
+- Garder un cache local pour la reactivite de l'interface
+
+#### 4. Synchronisation temps reel (optionnel mais recommande)
+
+Activer les Realtime subscriptions de Supabase pour que les modifications d'un utilisateur apparaissent immediatement sur les ecrans des autres.
+
+### Impact sur les utilisateurs existants
+
+- Les donnees actuellement dans le localStorage des differents navigateurs ne seront PAS migrees automatiquement
+- Il faudra re-saisir les donnees ou exporter/importer manuellement
+- Les donnees initiales du fichier Excel (calendrier annuel) seront reinjectees dans Supabase
+
+### Estimation de la complexite
+
+Ce chantier est **consequent** car il touche tous les stores de l'application. Il est recommande de proceder par etapes :
+
+1. **Phase 1** : Migrer le calendrier annuel (`annual_events`) -- c'est le plus urgent vu le probleme signale
+2. **Phase 2** : Migrer le planning mensuel (`planning_assignments` + `people`)
+3. **Phase 3** : Migrer les taches hebdomadaires et personnalisees
+4. **Phase 4** : Ajouter la synchronisation temps reel
+
+### Question prealable
+
+Avant de commencer, il faut activer Supabase sur le projet. Souhaitez-vous :
+- **Lovable Cloud** (recommande, pas besoin de compte externe)
+- **Supabase externe** (vous gerez votre propre projet Supabase)
 

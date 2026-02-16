@@ -237,7 +237,7 @@ export function AppSidebar({ currentView, onViewChange }: AppSidebarProps) {
 
       {/* Footer */}
       <div className="p-4 border-t border-sidebar-border text-xs text-sidebar-foreground/50 text-center">
-        Données sauvegardées localement
+        Données partagées en temps réel
       </div>
     </aside>
   );

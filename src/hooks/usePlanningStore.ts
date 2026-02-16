@@ -69,7 +69,6 @@ export const usePlanningStore = create<PlanningStore>()((set, get) => ({
   loaded: false,
 
   fetchAll: async () => {
-    if (get().loaded) return;
     set({ loading: true });
 
     const [peopleRes, assignmentsRes, settingsRes] = await Promise.all([

@@ -11,6 +11,7 @@ import {
 } from './ui/dropdown-menu';
 import { usePlanningStore } from '@/hooks/usePlanningStore';
 import { toast } from '@/hooks/use-toast';
+import { Skeleton } from './ui/skeleton';
 import logo from '@/assets/logo.png';
 
 interface MonthPlanningProps {
@@ -25,7 +26,18 @@ export function MonthPlanning({ year, month }: MonthPlanningProps) {
     return a[1][0].getTime() - b[1][0].getTime();
   });
 
-  const { assignments, people, copyWeek, pasteToWeek, clearWeek, clipboard } = usePlanningStore();
+  const { assignments, people, copyWeek, pasteToWeek, clearWeek, clipboard, loading } = usePlanningStore();
+
+  if (loading && people.length === 0) {
+    return (
+      <div className="p-6 animate-fade-in space-y-4">
+        <Skeleton className="h-10 w-96" />
+        <Skeleton className="h-12 w-full" />
+        <Skeleton className="h-64 w-full" />
+        <Skeleton className="h-64 w-full" />
+      </div>
+    );
+  }
 
   const getPersonName = (personId: string | undefined) => {
     if (!personId) return '';

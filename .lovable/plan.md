@@ -1,37 +1,32 @@
 
-## Ajout de couleurs aux evenements du calendrier annuel
+## Plan: Changement cosmétique pour tester le webhook GitHub
 
-### Ce qui change pour l'utilisateur
+### Objectif
+Faire un changement cosmétique visible pour vérifier que le webhook GitHub déclenche automatiquement un redéploiement sur Coolify. Une fois le changement visible en production, vous confirmerez que le pipeline de déploiement fonctionne correctement.
 
-Chaque evenement dans une case du calendrier pourra avoir sa propre couleur de fond. Dans la boite de dialogue d'edition des evenements, un selecteur de couleur (pastilles cliquables) apparaitra a cote de chaque evenement. La couleur choisie sera visible dans la grille du calendrier.
+### Changement proposé
+**Modifier le texte du footer de la sidebar** (ligne 289 dans AppSidebar.tsx)
 
-### Palette de couleurs proposee
+Actuellement: `Données partagées en temps réel`
+Nouveau: `✨ Données partagées en temps réel ✨`
 
-8 couleurs predefinies sous forme de pastilles :
-- Jaune (par defaut, comme actuellement)
-- Vert
-- Bleu
-- Rose/Rouge
-- Orange
-- Violet
-- Gris
-- Blanc/transparent (pas de couleur)
+**Pourquoi ce changement?**
+- ✅ Cosmétique et non disruptif
+- ✅ Très visible lors du chargement de l'application
+- ✅ Facile à identifier dans la production
+- ✅ Ne casse aucune fonctionnalité
+- ✅ Facile à revenir si nécessaire
 
-### Details techniques
+### Étapes à suivre
+1. **Modifier le fichier** `src/components/AppSidebar.tsx` (ligne 289)
+2. **Pousser à GitHub** - Lovable synchronisera automatiquement avec GitHub
+3. **Vérifier le webhook** - Coolify devrait détecter le push et démarrer un nouveau build
+4. **Tester en production** - Accéder à `https://planning-doggy.yeti-factory.com` et vérifier que le texte du footer a changé
+5. **Confirmer le succès** - Si le texte a changé, le redéploiement automatique fonctionne! ✅
 
-**1. Migration base de donnees** : Ajouter une colonne `color` (texte, nullable, defaut `null`) a la table `annual_events`.
+### Points importants
+- Le webhook devrait déclencher un build automatique dans Coolify
+- Le déploiement peut prendre quelques secondes à quelques minutes
+- Vous pouvez vérifier les logs de déploiement dans le dashboard Coolify
+- Une fois testé, nous pouvons revenir au texte original si vous le souhaitez
 
-**2. Modifier `src/hooks/useAnnualPlanningStore.ts`** :
-- Changer le type de `events` de `Record<string, string[]>` a `Record<string, { text: string; color: string | null }[]>` pour stocker texte + couleur.
-- Adapter `fetchEvents`, `addEvent`, `updateEvent`, `removeEvent`, `setEvents` pour gerer la couleur.
-
-**3. Modifier `src/components/DayEventsDialog.tsx`** :
-- Ajouter un etat local pour les couleurs de chaque evenement.
-- Afficher des pastilles de couleur cliquables a cote de chaque champ texte.
-- Transmettre la couleur au store lors de l'enregistrement.
-
-**4. Modifier `src/components/AnnualMonthView.tsx`** :
-- Utiliser la couleur de chaque evenement pour le fond de la pastille dans la grille, au lieu du jaune fixe actuel.
-
-**5. Modifier `src/components/AnnualCalendar.tsx`** (vue 12 mois si utilisee) :
-- Adapter l'affichage des indicateurs de couleur.

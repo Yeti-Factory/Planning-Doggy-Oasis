@@ -237,17 +237,6 @@ export function AppSidebar({ currentView, onViewChange }: AppSidebarProps) {
 
                   {expandedSections.includes(`annual-${year}`) && (
                     <div className="ml-5 mt-0.5 space-y-0.5 animate-slide-in">
-                      <button
-                        onClick={() => onViewChange({ type: 'annual', year })}
-                        className={cn(
-                          'w-full text-left px-3 py-1.5 text-sm rounded-md transition-colors font-medium',
-                          typeof currentView === 'object' && currentView.type === 'annual' && currentView.year === year
-                            ? 'bg-sidebar-primary text-sidebar-primary-foreground'
-                            : 'text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground'
-                        )}
-                      >
-                        Vue annuelle
-                      </button>
                       {MONTHS_FR.map((monthName, idx) => (
                         <button
                           key={`annual-${year}-${idx}`}

@@ -1,24 +1,37 @@
 
+## Ajout de couleurs aux evenements du calendrier annuel
 
-## Simplification du calendrier annuel
+### Ce qui change pour l'utilisateur
 
-### Modification
+Chaque evenement dans une case du calendrier pourra avoir sa propre couleur de fond. Dans la boite de dialogue d'edition des evenements, un selecteur de couleur (pastilles cliquables) apparaitra a cote de chaque evenement. La couleur choisie sera visible dans la grille du calendrier.
 
-Retirer le lien "Vue annuelle" dans la sidebar pour la section "Calendrier annuel". La navigation sera identique au planning mensuel : chaque annee se deplie directement en liste de 12 mois, sans option "Vue annuelle".
+### Palette de couleurs proposee
 
-### Fichier a modifier
+8 couleurs predefinies sous forme de pastilles :
+- Jaune (par defaut, comme actuellement)
+- Vert
+- Bleu
+- Rose/Rouge
+- Orange
+- Violet
+- Gris
+- Blanc/transparent (pas de couleur)
 
-**`src/components/AppSidebar.tsx`** (lignes 240-249) :
-- Supprimer le bouton "Vue annuelle" dans le sous-menu de chaque annee du calendrier annuel
-- Les mois restent affiches directement sous l'annee, exactement comme pour le planning mensuel
+### Details techniques
 
-### Optionnel : nettoyage du type View
+**1. Migration base de donnees** : Ajouter une colonne `color` (texte, nullable, defaut `null`) a la table `annual_events`.
 
-Le type de vue `{ type: 'annual'; year: number }` ne sera plus utilise. On peut le garder sans impact, ou le retirer de `Index.tsx` et `AppSidebar.tsx` pour garder le code propre.
+**2. Modifier `src/hooks/useAnnualPlanningStore.ts`** :
+- Changer le type de `events` de `Record<string, string[]>` a `Record<string, { text: string; color: string | null }[]>` pour stocker texte + couleur.
+- Adapter `fetchEvents`, `addEvent`, `updateEvent`, `removeEvent`, `setEvents` pour gerer la couleur.
 
-### Impact
+**3. Modifier `src/components/DayEventsDialog.tsx`** :
+- Ajouter un etat local pour les couleurs de chaque evenement.
+- Afficher des pastilles de couleur cliquables a cote de chaque champ texte.
+- Transmettre la couleur au store lors de l'enregistrement.
 
-- Aucun changement de donnees
-- Le composant `AnnualCalendar.tsx` (vue 12 mois) restera dans le code mais ne sera plus accessible depuis la sidebar
-- La vue par mois individuel (`AnnualMonthView`) reste la seule navigation du calendrier annuel
+**4. Modifier `src/components/AnnualMonthView.tsx`** :
+- Utiliser la couleur de chaque evenement pour le fond de la pastille dans la grille, au lieu du jaune fixe actuel.
 
+**5. Modifier `src/components/AnnualCalendar.tsx`** (vue 12 mois si utilisee) :
+- Adapter l'affichage des indicateurs de couleur.

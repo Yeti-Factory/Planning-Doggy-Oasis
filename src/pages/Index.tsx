@@ -13,6 +13,7 @@ import { usePlanningStore } from '@/hooks/usePlanningStore';
 import { useAnnualPlanningStore } from '@/hooks/useAnnualPlanningStore';
 import { useCustomTasksStore } from '@/hooks/useCustomTasksStore';
 import { useWeeklyTasksStore } from '@/hooks/useWeeklyTasksStore';
+import { useRestDaysStore } from '@/hooks/useRestDaysStore';
 
 type View = 'guide' | 'people' | 'settings' | 'tasks' | 'migration' | { type: 'month'; year: number; month: number } | { type: 'annual'; year: number } | { type: 'annual-month'; year: number; month: number };
 
@@ -27,20 +28,24 @@ const Index = () => {
   const subscribeAnnual = useAnnualPlanningStore((s) => s.subscribeRealtime);
   const subscribeCustomTasks = useCustomTasksStore((s) => s.subscribeRealtime);
   const subscribeWeeklyTasks = useWeeklyTasksStore((s) => s.subscribeRealtime);
+  const fetchRestDays = useRestDaysStore((s) => s.fetchRestDays);
+  const subscribeRestDays = useRestDaysStore((s) => s.subscribeRealtime);
 
   useEffect(() => {
     fetchPlanning();
     fetchAnnual();
     fetchCustomTasks();
-  }, [fetchPlanning, fetchAnnual, fetchCustomTasks]);
+    fetchRestDays();
+  }, [fetchPlanning, fetchAnnual, fetchCustomTasks, fetchRestDays]);
 
   useEffect(() => {
     const unsub1 = subscribePlanning();
     const unsub2 = subscribeAnnual();
     const unsub3 = subscribeCustomTasks();
     const unsub4 = subscribeWeeklyTasks();
-    return () => { unsub1(); unsub2(); unsub3(); unsub4(); };
-  }, [subscribePlanning, subscribeAnnual, subscribeCustomTasks, subscribeWeeklyTasks]);
+    const unsub5 = subscribeRestDays();
+    return () => { unsub1(); unsub2(); unsub3(); unsub4(); unsub5(); };
+  }, [subscribePlanning, subscribeAnnual, subscribeCustomTasks, subscribeWeeklyTasks, subscribeRestDays]);
 
   const renderContent = () => {
     if (currentView === 'guide') {

@@ -118,6 +118,35 @@ export type Database = {
           },
         ]
       }
+      rest_days: {
+        Row: {
+          created_at: string
+          date: string
+          id: string
+          person_id: string
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          id?: string
+          person_id: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          id?: string
+          person_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rest_days_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       settings: {
         Row: {
           created_at: string

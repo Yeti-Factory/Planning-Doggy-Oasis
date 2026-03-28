@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Check, X, Clock } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 
 interface TaskCellProps {
   value: string;

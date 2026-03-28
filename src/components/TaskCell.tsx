@@ -43,13 +43,21 @@ export function TaskCell({ value, onChange, personName, dayName, period }: TaskC
     task.toLowerCase().includes(searchValue.toLowerCase())
   );
 
+  const currentTasks = value ? value.split(' + ').map(t => t.trim()).filter(Boolean) : [];
+
   const handleSelect = (task: string) => {
-    if (value && value.trim() !== '') {
-      onChange(`${value} + ${task}`);
+    if (currentTasks.includes(task)) {
+      const remaining = currentTasks.filter(t => t !== task);
+      onChange(remaining.join(' + '));
     } else {
-      onChange(task);
+      onChange([...currentTasks, task].join(' + '));
     }
     setSearchValue('');
+  };
+
+  const handleRemoveTask = (taskToRemove: string) => {
+    const remaining = currentTasks.filter(t => t !== taskToRemove);
+    onChange(remaining.join(' + '));
   };
 
   const handleClear = (e: React.MouseEvent) => {

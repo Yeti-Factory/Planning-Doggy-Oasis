@@ -67,10 +67,12 @@ export function TaskCell({ value, onChange, personName, dayName, period }: TaskC
 
   const handleCustomInput = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && searchValue.trim()) {
-      if (value && value.trim() !== '') {
-        onChange(`${value} + ${searchValue.trim()}`);
+      const trimmed = searchValue.trim();
+      if (currentTasks.includes(trimmed)) {
+        const remaining = currentTasks.filter(t => t !== trimmed);
+        onChange(remaining.join(' + '));
       } else {
-        onChange(searchValue.trim());
+        onChange([...currentTasks, trimmed].join(' + '));
       }
       setSearchValue('');
     }

@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Check, X, Clock } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 
 interface TaskCellProps {
   value: string;
@@ -42,13 +43,21 @@ export function TaskCell({ value, onChange, personName, dayName, period }: TaskC
     task.toLowerCase().includes(searchValue.toLowerCase())
   );
 
+  const currentTasks = value ? value.split(' + ').map(t => t.trim()).filter(Boolean) : [];
+
   const handleSelect = (task: string) => {
-    if (value && value.trim() !== '') {
-      onChange(`${value} + ${task}`);
+    if (currentTasks.includes(task)) {
+      const remaining = currentTasks.filter(t => t !== task);
+      onChange(remaining.join(' + '));
     } else {
-      onChange(task);
+      onChange([...currentTasks, task].join(' + '));
     }
     setSearchValue('');
+  };
+
+  const handleRemoveTask = (taskToRemove: string) => {
+    const remaining = currentTasks.filter(t => t !== taskToRemove);
+    onChange(remaining.join(' + '));
   };
 
   const handleClear = (e: React.MouseEvent) => {
@@ -58,10 +67,12 @@ export function TaskCell({ value, onChange, personName, dayName, period }: TaskC
 
   const handleCustomInput = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && searchValue.trim()) {
-      if (value && value.trim() !== '') {
-        onChange(`${value} + ${searchValue.trim()}`);
+      const trimmed = searchValue.trim();
+      if (currentTasks.includes(trimmed)) {
+        const remaining = currentTasks.filter(t => t !== trimmed);
+        onChange(remaining.join(' + '));
       } else {
-        onChange(searchValue.trim());
+        onChange([...currentTasks, trimmed].join(' + '));
       }
       setSearchValue('');
     }
@@ -77,6 +88,8 @@ export function TaskCell({ value, onChange, personName, dayName, period }: TaskC
   const displayValue = value || '';
   const isEmpty = !value || value.trim() === '';
 
+  const isTaskSelected = (task: string) => currentTasks.includes(task);
+
   const renderTaskButton = (task: string, hasTime: boolean = false) => (
     <button
       key={task}
@@ -84,10 +97,10 @@ export function TaskCell({ value, onChange, personName, dayName, period }: TaskC
       className={cn(
         'w-full flex items-center gap-2 px-2 py-1.5 text-sm rounded-md text-left',
         'hover:bg-accent hover:text-accent-foreground transition-colors',
-        value?.includes(task) && 'bg-accent/50'
+        isTaskSelected(task) && 'bg-accent/50'
       )}
     >
-      {value?.includes(task) ? (
+      {isTaskSelected(task) ? (
         <Check className="h-3 w-3 shrink-0" />
       ) : hasTime ? (
         <Clock className="h-3 w-3 shrink-0 text-muted-foreground" />
@@ -183,10 +196,22 @@ export function TaskCell({ value, onChange, personName, dayName, period }: TaskC
             )}
           </div>
         </ScrollArea>
-        {!isEmpty && (
+        {currentTasks.length > 0 && (
           <div className="p-2 border-t">
             <p className="text-xs text-muted-foreground mb-2">Tâches actuelles :</p>
-            <p className="text-xs bg-muted p-2 rounded">{displayValue}</p>
+            <div className="flex flex-wrap gap-1">
+              {currentTasks.map((task) => (
+                <Badge key={task} variant="secondary" className="text-xs gap-1 pr-1">
+                  {task}
+                  <button
+                    onClick={() => handleRemoveTask(task)}
+                    className="ml-0.5 hover:bg-destructive/20 rounded-full p-0.5"
+                  >
+                    <X className="h-2.5 w-2.5" />
+                  </button>
+                </Badge>
+              ))}
+            </div>
           </div>
         )}
       </PopoverContent>

@@ -97,10 +97,10 @@ export function TaskCell({ value, onChange, personName, dayName, period }: TaskC
       className={cn(
         'w-full flex items-center gap-2 px-2 py-1.5 text-sm rounded-md text-left',
         'hover:bg-accent hover:text-accent-foreground transition-colors',
-        value?.includes(task) && 'bg-accent/50'
+        isTaskSelected(task) && 'bg-accent/50'
       )}
     >
-      {value?.includes(task) ? (
+      {isTaskSelected(task) ? (
         <Check className="h-3 w-3 shrink-0" />
       ) : hasTime ? (
         <Clock className="h-3 w-3 shrink-0 text-muted-foreground" />

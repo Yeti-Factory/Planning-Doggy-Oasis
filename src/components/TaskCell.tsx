@@ -88,6 +88,8 @@ export function TaskCell({ value, onChange, personName, dayName, period }: TaskC
   const displayValue = value || '';
   const isEmpty = !value || value.trim() === '';
 
+  const isTaskSelected = (task: string) => currentTasks.includes(task);
+
   const renderTaskButton = (task: string, hasTime: boolean = false) => (
     <button
       key={task}

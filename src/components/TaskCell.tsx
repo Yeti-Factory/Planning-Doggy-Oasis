@@ -196,10 +196,22 @@ export function TaskCell({ value, onChange, personName, dayName, period }: TaskC
             )}
           </div>
         </ScrollArea>
-        {!isEmpty && (
+        {currentTasks.length > 0 && (
           <div className="p-2 border-t">
             <p className="text-xs text-muted-foreground mb-2">Tâches actuelles :</p>
-            <p className="text-xs bg-muted p-2 rounded">{displayValue}</p>
+            <div className="flex flex-wrap gap-1">
+              {currentTasks.map((task) => (
+                <Badge key={task} variant="secondary" className="text-xs gap-1 pr-1">
+                  {task}
+                  <button
+                    onClick={() => handleRemoveTask(task)}
+                    className="ml-0.5 hover:bg-destructive/20 rounded-full p-0.5"
+                  >
+                    <X className="h-2.5 w-2.5" />
+                  </button>
+                </Badge>
+              ))}
+            </div>
           </div>
         )}
       </PopoverContent>

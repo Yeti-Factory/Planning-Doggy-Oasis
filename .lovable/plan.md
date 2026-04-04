@@ -1,43 +1,21 @@
 
 
-# Rectification case par case dans le planificateur de taches
+# Correction de la suppression individuelle de taches
 
-## Probleme
-Quand on ajoute plusieurs taches dans une cellule (concatenees avec " + "), le bouton X efface tout. Impossible de retirer une seule tache sans tout recommencer.
+## Diagnostic
+
+Le code actuel dans `TaskCell.tsx` contient bien la logique de toggle et de suppression individuelle. Le probleme probable vient du **format du separateur** dans les donnees stockees. Le `split(' + ')` (avec espaces obligatoires autour du `+`) peut echouer si certaines valeurs en base sont stockees avec un format different (par exemple `tache1+tache2` sans espaces, ou avec des espaces inconsistants). Dans ce cas, la cellule entiere est traitee comme une seule tache, rendant la suppression individuelle impossible.
 
 ## Solution
-Ajouter la possibilite de supprimer chaque tache individuellement dans la cellule :
 
-### Modifications dans `src/components/TaskCell.tsx`
+### Modifier `src/components/TaskCell.tsx`
 
-1. **Afficher les taches individuelles dans le popover** : Dans la section "Taches actuelles" en bas du popover, splitter la valeur par " + " et afficher chaque tache comme un badge/chip avec un petit bouton X pour la supprimer individuellement.
+1. **Rendre le split plus robuste** : remplacer `value.split(' + ')` par `value.split(/\s*\+\s*/)` partout dans le composant. Cela gere toutes les variations de separateur (`+`, ` +`, `+ `, ` + `).
 
-2. **Fonction de suppression individuelle** : Ajouter une fonction `handleRemoveTask(taskToRemove)` qui :
-   - Split la valeur actuelle par " + "
-   - Filtre la tache a supprimer
-   - Rejoint les taches restantes avec " + "
-   - Appelle `onChange` avec le resultat (ou chaine vide si plus aucune tache)
+2. **Agrandir les boutons X des badges** : augmenter la zone cliquable des boutons de suppression sur les badges pour les utilisateurs mobiles/tablette (padding plus grand, taille d'icone plus grande).
 
-3. **Decocher dans la liste** : Quand on clique sur une tache deja selectionnee (marquee d'un check), la retirer de la valeur au lieu de la re-ajouter. Actuellement `handleSelect` ajoute toujours avec " + ".
-
-### Detail technique
-```text
-// Split des taches existantes
-const currentTasks = value ? value.split(' + ').map(t => t.trim()) : [];
-
-// handleSelect modifie : toggle au lieu d'ajouter seulement
-if (currentTasks.includes(task)) {
-  const remaining = currentTasks.filter(t => t !== task);
-  onChange(remaining.join(' + '));
-} else {
-  onChange([...currentTasks, task].join(' + '));
-}
-
-// handleRemoveTask : supprimer une tache specifique
-const remaining = currentTasks.filter(t => t !== taskToRemove);
-onChange(remaining.join(' + '));
-```
+3. **Ajouter un re-normalisation a la sauvegarde** : s'assurer que `onChange` produit toujours un format consistant `tache1 + tache2` avec le join existant.
 
 ### Fichier concerne
-- **Modifie** : `src/components/TaskCell.tsx`
+- `src/components/TaskCell.tsx` : 3 occurrences de `split(' + ')` a remplacer par `split(/\s*\+\s*/)` (ligne 46, et potentiellement dans les handlers). Agrandir les zones cliquables des badges (lignes 204-213).
 

@@ -43,7 +43,7 @@ export function TaskCell({ value, onChange, personName, dayName, period }: TaskC
     task.toLowerCase().includes(searchValue.toLowerCase())
   );
 
-  const currentTasks = value ? value.split(' + ').map(t => t.trim()).filter(Boolean) : [];
+  const currentTasks = value ? value.split(/\s*\+\s*/).map(t => t.trim()).filter(Boolean) : [];
 
   const handleSelect = (task: string) => {
     if (currentTasks.includes(task)) {
@@ -205,9 +205,9 @@ export function TaskCell({ value, onChange, personName, dayName, period }: TaskC
                   {task}
                   <button
                     onClick={() => handleRemoveTask(task)}
-                    className="ml-0.5 hover:bg-destructive/20 rounded-full p-0.5"
+                    className="ml-0.5 hover:bg-destructive/20 rounded-full p-1.5 min-w-[24px] min-h-[24px] flex items-center justify-center"
                   >
-                    <X className="h-2.5 w-2.5" />
+                    <X className="h-3.5 w-3.5" />
                   </button>
                 </Badge>
               ))}

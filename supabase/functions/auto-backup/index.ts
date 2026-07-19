@@ -1,9 +1,57 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0"
+import { createClient } from 'npm:@supabase/supabase-js@2'
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+const BACKUP_TABLES = [
+  'people',
+  'planning_assignments',
+  'annual_events',
+  'weekly_tasks',
+  'custom_tasks',
+  'settings',
+  'rest_days',
+] as const
+
+interface BackupResult {
+  storage: boolean
+  onedrive: boolean | 'skipped'
+  errors: string[]
+}
+
+function jsonResponse(body: unknown, status: number): Response {
+  return Response.json(body, {
+    status,
+    headers: {
+      'Cache-Control': 'no-store',
+    },
+  })
+}
+
+function getRequiredEnv(name: string): string {
+  const value = Deno.env.get(name)?.trim()
+  if (!value) throw new Error(`Missing required environment variable: ${name}`)
+  return value
+}
+
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error)
+}
+
+async function sha256(value: string): Promise<Uint8Array> {
+  const bytes = new TextEncoder().encode(value)
+  return new Uint8Array(await crypto.subtle.digest('SHA-256', bytes))
+}
+
+async function secretsMatch(received: string, expected: string): Promise<boolean> {
+  const [receivedHash, expectedHash] = await Promise.all([sha256(received), sha256(expected)])
+  let difference = 0
+  for (let index = 0; index < receivedHash.length; index += 1) {
+    difference |= receivedHash[index] ^ expectedHash[index]
+  }
+  return difference === 0
+}
+
+function getBearerToken(request: Request): string {
+  const authorization = request.headers.get('Authorization') ?? ''
+  return authorization.startsWith('Bearer ') ? authorization.slice(7).trim() : ''
 }
 
 function encodeSharingUrl(sharingUrl: string): string {
@@ -14,142 +62,178 @@ function encodeSharingUrl(sharingUrl: string): string {
   return `u!${base64}`
 }
 
-async function getMicrosoftAccessToken(tenantId: string, clientId: string, clientSecret: string): Promise<string> {
-  const tokenUrl = `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`
-  const body = new URLSearchParams({
-    grant_type: 'client_credentials',
-    client_id: clientId,
-    client_secret: clientSecret,
-    scope: 'https://graph.microsoft.com/.default',
-  })
-
-  const res = await fetch(tokenUrl, {
+async function getMicrosoftAccessToken(
+  tenantId: string,
+  clientId: string,
+  clientSecret: string,
+): Promise<string> {
+  const response = await fetch(`https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: body.toString(),
+    body: new URLSearchParams({
+      grant_type: 'client_credentials',
+      client_id: clientId,
+      client_secret: clientSecret,
+      scope: 'https://graph.microsoft.com/.default',
+    }),
   })
 
-  if (!res.ok) {
-    const text = await res.text()
-    throw new Error(`Microsoft token error: ${res.status} - ${text}`)
-  }
+  if (!response.ok) throw new Error(`Microsoft token request failed (${response.status})`)
 
-  const data = await res.json()
+  const data: unknown = await response.json()
+  if (
+    !data ||
+    typeof data !== 'object' ||
+    !('access_token' in data) ||
+    typeof data.access_token !== 'string'
+  ) {
+    throw new Error('Microsoft token response did not contain an access token')
+  }
   return data.access_token
 }
 
-async function resolveShareFolder(accessToken: string, shareId: string): Promise<{ driveId: string; folderId: string }> {
-  const res = await fetch(`https://graph.microsoft.com/v1.0/shares/${shareId}/driveItem`, {
+async function resolveShareFolder(
+  accessToken: string,
+  shareId: string,
+): Promise<{ driveId: string; folderId: string }> {
+  const response = await fetch(`https://graph.microsoft.com/v1.0/shares/${shareId}/driveItem`, {
     headers: { Authorization: `Bearer ${accessToken}` },
   })
 
-  if (!res.ok) {
-    const text = await res.text()
-    throw new Error(`SharePoint resolve error: ${res.status} - ${text}`)
+  if (!response.ok) throw new Error(`SharePoint folder resolution failed (${response.status})`)
+
+  const item: unknown = await response.json()
+  if (
+    !item ||
+    typeof item !== 'object' ||
+    !('id' in item) ||
+    typeof item.id !== 'string' ||
+    !('parentReference' in item) ||
+    !item.parentReference ||
+    typeof item.parentReference !== 'object' ||
+    !('driveId' in item.parentReference) ||
+    typeof item.parentReference.driveId !== 'string'
+  ) {
+    throw new Error('SharePoint response did not contain the expected folder identifiers')
   }
 
-  const item = await res.json()
-  return {
-    driveId: item.parentReference.driveId,
-    folderId: item.id,
-  }
+  return { driveId: item.parentReference.driveId, folderId: item.id }
 }
 
-async function uploadToOneDrive(accessToken: string, driveId: string, folderId: string, fileName: string, content: string): Promise<void> {
-  const uploadUrl = `https://graph.microsoft.com/v1.0/drives/${driveId}/items/${folderId}:/${fileName}:/content`
-
-  const res = await fetch(uploadUrl, {
-    method: 'PUT',
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      'Content-Type': 'application/json',
+async function uploadToOneDrive(
+  accessToken: string,
+  driveId: string,
+  folderId: string,
+  fileName: string,
+  content: string,
+): Promise<void> {
+  const response = await fetch(
+    `https://graph.microsoft.com/v1.0/drives/${driveId}/items/${folderId}:/${fileName}:/content`,
+    {
+      method: 'PUT',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: content,
     },
-    body: content,
-  })
+  )
 
-  if (!res.ok) {
-    const text = await res.text()
-    throw new Error(`OneDrive upload error: ${res.status} - ${text}`)
-  }
+  if (!response.ok) throw new Error(`OneDrive upload failed (${response.status})`)
 }
 
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders })
+Deno.serve(async (request) => {
+  if (request.method !== 'POST') {
+    return jsonResponse({ error: 'Method not allowed' }, 405)
   }
 
-  const results: { local: boolean; onedrive: boolean; errors: string[] } = {
-    local: false,
-    onedrive: false,
+  let invokeSecret: string
+  try {
+    invokeSecret = getRequiredEnv('BACKUP_INVOKE_SECRET')
+  } catch (error) {
+    console.error(errorMessage(error))
+    return jsonResponse({ error: 'Backup service is not configured' }, 503)
+  }
+
+  if (!(await secretsMatch(getBearerToken(request), invokeSecret))) {
+    return jsonResponse({ error: 'Unauthorized' }, 401)
+  }
+
+  const results: BackupResult = {
+    storage: false,
+    onedrive: 'skipped',
     errors: [],
   }
 
   try {
     const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+      getRequiredEnv('SUPABASE_URL'),
+      getRequiredEnv('SUPABASE_SERVICE_ROLE_KEY'),
+      { auth: { persistSession: false, autoRefreshToken: false } },
     )
 
-    const tables = ['people', 'planning_assignments', 'annual_events', 'weekly_tasks', 'custom_tasks', 'settings']
-    const backupData: Record<string, any> = {}
+    const backupData: Record<string, unknown> = {
+      metadata: {
+        schemaVersion: 1,
+        createdAt: new Date().toISOString(),
+        tables: BACKUP_TABLES,
+      },
+    }
 
-    for (const table of tables) {
+    for (const table of BACKUP_TABLES) {
       const { data, error } = await supabaseAdmin.from(table).select('*')
-      if (error) throw new Error(`Error fetching ${table}: ${error.message}`)
+      if (error) throw new Error(`Unable to export ${table}: ${error.message}`)
       backupData[table] = data
     }
 
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
-    const fileName = `backup-${timestamp}.json`
+    const fileName = `planning-doggy-oasis-${timestamp}.json`
     const fileContent = JSON.stringify(backupData, null, 2)
 
-    // 1. Local backup to storage bucket
     try {
       const { error: uploadError } = await supabaseAdmin.storage
         .from('backups')
-        .upload(fileName, fileContent, { contentType: 'application/json' })
+        .upload(fileName, fileContent, {
+          contentType: 'application/json',
+          upsert: false,
+        })
 
       if (uploadError) throw uploadError
-      results.local = true
-      console.log(`Local backup created: ${fileName}`)
-    } catch (e) {
-      results.errors.push(`Local: ${e.message}`)
-      console.error('Local backup failed:', e.message)
+      results.storage = true
+      console.log(`Storage backup created: ${fileName}`)
+    } catch (error) {
+      const message = errorMessage(error)
+      results.errors.push(`Storage: ${message}`)
+      console.error('Storage backup failed:', message)
     }
 
-    // 2. OneDrive/SharePoint backup
-    try {
-      const tenantId = Deno.env.get('AZURE_TENANT_ID') ?? ''
-      const clientId = Deno.env.get('AZURE_CLIENT_ID') ?? ''
-      const clientSecret = Deno.env.get('AZURE_CLIENT_SECRET') ?? ''
-      const shareLink = Deno.env.get('ONEDRIVE_BACKUP_LINK') ?? ''
+    const tenantId = Deno.env.get('AZURE_TENANT_ID')?.trim()
+    const clientId = Deno.env.get('AZURE_CLIENT_ID')?.trim()
+    const clientSecret = Deno.env.get('AZURE_CLIENT_SECRET')?.trim()
+    const shareLink = Deno.env.get('ONEDRIVE_BACKUP_LINK')?.trim()
+    const oneDriveValues = [tenantId, clientId, clientSecret, shareLink]
 
-      if (!tenantId || !clientId || !clientSecret || !shareLink) {
-        throw new Error('Missing OneDrive configuration secrets')
+    if (oneDriveValues.some(Boolean) && !oneDriveValues.every(Boolean)) {
+      results.errors.push('OneDrive: configuration is incomplete')
+    } else if (tenantId && clientId && clientSecret && shareLink) {
+      try {
+        const accessToken = await getMicrosoftAccessToken(tenantId, clientId, clientSecret)
+        const { driveId, folderId } = await resolveShareFolder(accessToken, encodeSharingUrl(shareLink))
+        await uploadToOneDrive(accessToken, driveId, folderId, fileName, fileContent)
+        results.onedrive = true
+        console.log(`OneDrive backup uploaded: ${fileName}`)
+      } catch (error) {
+        const message = errorMessage(error)
+        results.onedrive = false
+        results.errors.push(`OneDrive: ${message}`)
+        console.error('OneDrive backup failed:', message)
       }
-
-      const accessToken = await getMicrosoftAccessToken(tenantId, clientId, clientSecret)
-      const shareId = encodeSharingUrl(shareLink)
-      const { driveId, folderId } = await resolveShareFolder(accessToken, shareId)
-      await uploadToOneDrive(accessToken, driveId, folderId, fileName, fileContent)
-
-      results.onedrive = true
-      console.log(`OneDrive backup uploaded: ${fileName}`)
-    } catch (e) {
-      results.errors.push(`OneDrive: ${e.message}`)
-      console.error('OneDrive backup failed:', e.message)
     }
 
-    const status = results.local || results.onedrive ? 200 : 500
-    return new Response(
-      JSON.stringify({ message: 'Backup completed', fileName, ...results }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status }
-    )
+    const success = results.storage || results.onedrive === true
+    return jsonResponse({ success, fileName, ...results }, success ? 200 : 500)
   } catch (error) {
-    console.error('Backup failed:', error)
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
-    )
+    console.error('Backup failed:', errorMessage(error))
+    return jsonResponse({ error: 'Backup failed' }, 500)
   }
 })

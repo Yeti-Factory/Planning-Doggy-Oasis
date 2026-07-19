@@ -41,7 +41,7 @@ export const useAnnualPlanningStore = create<AnnualPlanningState>()((set, get) =
     const events: Record<string, AnnualEvent[]> = {};
     for (const row of data || []) {
       if (!events[row.date]) events[row.date] = [];
-      events[row.date].push({ text: row.event_text, color: (row as any).color ?? null });
+      events[row.date].push({ text: row.event_text, color: row.color ?? null });
     }
     set({ events, loading: false, loaded: true });
   },
@@ -58,7 +58,7 @@ export const useAnnualPlanningStore = create<AnnualPlanningState>()((set, get) =
     }));
 
     supabase.from('annual_events')
-      .insert({ date: dateKey, event_text: text, position, color } as any)
+      .insert({ date: dateKey, event_text: text, position, color })
       .then(({ error }) => {
         if (error) console.error('Error adding event:', error);
       });
@@ -129,7 +129,7 @@ export const useAnnualPlanningStore = create<AnnualPlanningState>()((set, get) =
           position: i,
           color: evt.color,
         }));
-        await supabase.from('annual_events').insert(rows as any);
+        await supabase.from('annual_events').insert(rows);
       }
     })();
   },

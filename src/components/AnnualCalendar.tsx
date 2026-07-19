@@ -128,7 +128,7 @@ export function AnnualCalendar({ year }: AnnualCalendarProps) {
     day: number;
     month: number;
     year: number;
-  }>({ open: false, dateKey: '', day: 1, month: 0, year: 2026 });
+  }>({ open: false, dateKey: '', day: 1, month: 0, year });
 
   const handleDayClick = useCallback(
     (dateKey: string, day: number, month: number, yr: number) => {

@@ -12,6 +12,17 @@ import {
 } from '@/components/ui/select';
 import { Users, Plus, Trash2, Edit2, Check, X } from 'lucide-react';
 import { toast } from 'sonner';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
 export function PeopleManager() {
   const { people, addPerson, updatePerson, removePerson } = usePlanningStore();
@@ -165,14 +176,33 @@ export function PeopleManager() {
                         <Button size="sm" variant="ghost" onClick={() => handleEdit(person.id)} className="h-8 w-8 p-0">
                           <Edit2 className="w-4 h-4" />
                         </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => handleRemove(person.id, person.name)}
-                          className="h-8 w-8 p-0 hover:bg-destructive/10 hover:text-destructive"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-8 w-8 p-0 hover:bg-destructive/10 hover:text-destructive"
+                              aria-label={`Supprimer ${person.name}`}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Supprimer {person.name} ?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Cette action supprimera aussi ses affectations, ses tâches hebdomadaires et ses
+                                jours de repos. Elle est irréversible.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Annuler</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => handleRemove(person.id, person.name)}>
+                                Supprimer définitivement
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       </>
                     )}
                   </div>

@@ -2,6 +2,7 @@ import { getDaysInMonth, formatDateKey } from '@/lib/dateUtils';
 import { usePlanningStore } from '@/hooks/usePlanningStore';
 import { useRestDaysStore } from '@/hooks/useRestDaysStore';
 import { DAYS_FR } from '@/types/planning';
+import { toast } from '@/hooks/use-toast';
 
 interface PersonGridViewProps {
   year: number;
@@ -44,7 +45,15 @@ export function PersonGridView({ year, month }: PersonGridViewProps) {
     return {};
   };
 
-  const handleCellClick = (personId: string, dateKey: string) => {
+  const handleCellClick = (personId: string, dateKey: string, hasAssignment: boolean, isRest: boolean) => {
+    if (!isRest && hasAssignment) {
+      toast({
+        title: 'Repos impossible',
+        description: "Retirez d'abord l'affectation de cette personne pour cette journée.",
+        variant: 'destructive',
+      });
+      return;
+    }
     toggleRestDay(personId, dateKey);
   };
 
@@ -85,7 +94,14 @@ export function PersonGridView({ year, month }: PersonGridViewProps) {
                     key={day.toISOString()}
                     className="px-0 py-0 text-center border border-border/50 cursor-pointer hover:opacity-80 transition-opacity"
                     style={{ ...style, width: 28, height: 24 }}
-                    onClick={() => handleCellClick(person.id, info.dateKey)}
+                    onClick={() =>
+                      handleCellClick(
+                        person.id,
+                        info.dateKey,
+                        info.hasMorning || info.hasAfternoon || info.hasFullDay,
+                        info.rest
+                      )
+                    }
                     title={`${person.name} – ${day.toLocaleDateString('fr-FR')}${info.rest ? ' (Repos)' : ''}`}
                   >
                     {info.rest ? 'R' : ''}

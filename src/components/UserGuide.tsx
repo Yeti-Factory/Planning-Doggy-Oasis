@@ -138,7 +138,7 @@ export function UserGuide() {
             </li>
             <li className="flex items-start gap-2">
               <AlertTriangle className="w-4 h-4 text-amber-600 mt-0.5 shrink-0" />
-              <span className="text-amber-700 dark:text-amber-300">Attention : l'effacement est immédiat, pas de confirmation !</span>
+              <span className="text-amber-700 dark:text-amber-300">Une confirmation est demandée avant l'effacement d'une journée ou d'une semaine.</span>
             </li>
           </ul>
         </div>

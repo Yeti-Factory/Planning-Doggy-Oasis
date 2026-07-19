@@ -23,7 +23,7 @@ export function AnnualMonthView({ year, month }: AnnualMonthViewProps) {
     day: number;
     month: number;
     year: number;
-  }>({ open: false, dateKey: '', day: 1, month: 0, year: 2026 });
+  }>({ open: false, dateKey: '', day: 1, month, year });
 
   const handleDayClick = useCallback(
     (dateKey: string, day: number, m: number, yr: number) => {

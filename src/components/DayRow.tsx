@@ -7,13 +7,26 @@ import { MAX_PEOPLE_PER_SLOT } from '@/types/planning';
 import { Button } from './ui/button';
 import { Plus, Minus, Copy, ClipboardPaste, Trash2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from './ui/alert-dialog';
+import { useRestDaysStore } from '@/hooks/useRestDaysStore';
 
 interface DayRowProps {
   date: Date;
 }
 
 export function DayRow({ date }: DayRowProps) {
-  const { getAssignment, setAssignment, copyDay, pasteToDay, clearDay, clipboard } = usePlanningStore();
+  const { people, getAssignment, setAssignment, copyDay, pasteToDay, clearDay, clipboard } = usePlanningStore();
+  const isRestDay = useRestDaysStore((state) => state.isRestDay);
   const dateKey = formatDateKey(date);
   const assignment = getAssignment(dateKey);
   const weekend = isWeekend(date);
@@ -37,10 +50,13 @@ export function DayRow({ date }: DayRowProps) {
 
   // Update visible counts when assignment changes (e.g., after paste)
   useEffect(() => {
+    const nextMorning = assignment?.morning || [];
+    const nextAfternoon = assignment?.afternoon || [];
+    const nextFullDay = assignment?.fullDay || [];
     setVisibleCounts({
-      morning: getInitialVisibleCount(morning),
-      afternoon: getInitialVisibleCount(afternoon),
-      fullDay: getInitialVisibleCount(fullDay),
+      morning: getInitialVisibleCount(nextMorning),
+      afternoon: getInitialVisibleCount(nextAfternoon),
+      fullDay: getInitialVisibleCount(nextFullDay),
     });
   }, [assignment]);
 
@@ -111,6 +127,9 @@ export function DayRow({ date }: DayRowProps) {
     const canAdd = visibleCount < MAX_PEOPLE_PER_SLOT;
     const filledCount = values.filter(Boolean).length;
     const canRemove = visibleCount > Math.max(1, filledCount);
+    const peopleOnRest = people
+      .filter((person) => isRestDay(person.id, dateKey))
+      .map((person) => person.id);
 
     return (
       <div className="flex flex-col gap-1">
@@ -119,7 +138,7 @@ export function DayRow({ date }: DayRowProps) {
             key={index}
             value={values[index]}
             onChange={(v) => setAssignment(dateKey, slotType, index, v)}
-            disabledIds={getAllAssignedIds(slotType, index)}
+            disabledIds={[...getAllAssignedIds(slotType, index), ...peopleOnRest]}
             slotType={slotType}
           />
         ))}
@@ -181,15 +200,30 @@ export function DayRow({ date }: DayRowProps) {
               </Button>
             )}
             {hasAssignments && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-6 w-6 p-0 text-destructive hover:text-destructive"
-                onClick={handleClearDay}
-                title="Effacer cette journée"
-              >
-                <Trash2 className="w-3 h-3" />
-              </Button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 w-6 p-0 text-destructive hover:text-destructive"
+                    title="Effacer cette journée"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Effacer le {formatDate(date)} ?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Toutes les affectations de cette journée seront supprimées. Cette action est irréversible.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Annuler</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleClearDay}>Effacer la journée</AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             )}
           </div>
         </div>

@@ -17,10 +17,31 @@ import { useRestDaysStore } from '@/hooks/useRestDaysStore';
 import { toast } from '@/hooks/use-toast';
 import { Skeleton } from './ui/skeleton';
 import logo from '@/assets/logo.png';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from './ui/alert-dialog';
 
 interface MonthPlanningProps {
   year: number;
   month: number;
+}
+
+function escapeHtml(value: string): string {
+  return value.replace(/[&<>'"]/g, (character) => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    "'": '&#039;',
+    '"': '&quot;',
+  })[character] ?? character);
 }
 
 export function MonthPlanning({ year, month }: MonthPlanningProps) {
@@ -48,7 +69,7 @@ export function MonthPlanning({ year, month }: MonthPlanningProps) {
   const getPersonName = (personId: string | undefined) => {
     if (!personId) return '';
     const person = people.find(p => p.id === personId);
-    return person ? `[${person.code}] ${person.name}` : '';
+    return person ? escapeHtml(`[${person.code}] ${person.name}`) : '';
   };
 
   const getSlotNames = (slotIds: (string | undefined)[] | undefined): string => {
@@ -102,7 +123,6 @@ export function MonthPlanning({ year, month }: MonthPlanningProps) {
   };
 
   const handlePrint = (weekNumber?: number) => {
-    // ... keep existing code
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
 
@@ -273,7 +293,7 @@ export function MonthPlanning({ year, month }: MonthPlanningProps) {
           <tbody>
             ${people.map(person => `
               <tr>
-                <td class="person">[${person.code}] ${person.name}</td>
+                <td class="person">${escapeHtml(`[${person.code}] ${person.name}`)}</td>
                 ${days.map(day => {
                   const cell = getCellBg(person.id, day);
                   return `<td style="background:${cell.bg};${cell.color ? 'color:' + cell.color + ';font-weight:bold;' : ''}">${cell.text}</td>`;
@@ -403,16 +423,34 @@ export function MonthPlanning({ year, month }: MonthPlanningProps) {
                               </Button>
                             )}
                             {weekHasAssignments(weekDays) && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-6 px-2 text-xs bg-background/50 hover:bg-background text-destructive hover:text-destructive"
-                                onClick={() => handleClearWeek(weekNum, weekDays)}
-                                title="Effacer cette semaine"
-                              >
-                                <Trash2 className="w-3 h-3 mr-1" />
-                                Effacer
-                              </Button>
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-6 px-2 text-xs bg-background/50 hover:bg-background text-destructive hover:text-destructive"
+                                    title="Effacer cette semaine"
+                                  >
+                                    <Trash2 className="w-3 h-3 mr-1" />
+                                    Effacer
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Effacer la semaine {weekNum} ?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Toutes les affectations affichées pour cette semaine seront supprimées. Cette
+                                      action est irréversible.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Annuler</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => handleClearWeek(weekNum, weekDays)}>
+                                      Effacer la semaine
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
                             )}
                           </div>
                         </div>

@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { supabase } from '@/integrations/supabase/client';
 import { Person, DayAssignment, Settings, PlanningState, CODE_MAP, Category, MAX_PEOPLE_PER_SLOT } from '@/types/planning';
+import { toast } from 'sonner';
 
 interface ClipboardData {
   type: 'day' | 'week';
@@ -40,24 +41,28 @@ const DEFAULT_SETTINGS: Settings = {
 
 // Helper to save a full day assignment to DB
 const saveDayToDb = async (date: string, assignment: Omit<DayAssignment, 'date'>) => {
-  // Delete existing for this date
-  await supabase.from('planning_assignments').delete().eq('date', date);
-  
-  const rows: { date: string; slot: string; slot_index: number; person_id: string }[] = [];
+  const rows: { slot: string; slot_index: number; person_id: string }[] = [];
   const slots = ['morning', 'afternoon', 'fullDay'] as const;
   
   for (const slot of slots) {
     const people = assignment[slot] || createEmptySlots();
     for (let i = 0; i < people.length; i++) {
       if (people[i]) {
-        rows.push({ date, slot, slot_index: i, person_id: people[i] as string });
+        rows.push({ slot, slot_index: i, person_id: people[i] as string });
       }
     }
   }
   
-  if (rows.length > 0) {
-    await supabase.from('planning_assignments').insert(rows);
-  }
+  const { error } = await supabase.rpc('replace_day_assignments', {
+    p_date: date,
+    p_rows: rows,
+  });
+  if (error) throw error;
+};
+
+const reportSaveError = (error: unknown) => {
+  console.error('Error saving planning data:', error);
+  toast.error("La modification n'a pas été enregistrée. Les données ont été rechargées.");
 };
 
 export const usePlanningStore = create<PlanningStore>()((set, get) => ({
@@ -118,7 +123,10 @@ export const usePlanningStore = create<PlanningStore>()((set, get) => ({
     set((state) => ({ people: [...state.people, newPerson] }));
 
     supabase.from('people').insert({ id, name, category, code }).then(({ error }) => {
-      if (error) console.error('Error adding person:', error);
+      if (error) {
+        reportSaveError(error);
+        get().fetchAll();
+      }
     });
   },
 
@@ -129,7 +137,10 @@ export const usePlanningStore = create<PlanningStore>()((set, get) => ({
     }));
 
     supabase.from('people').update({ name, category, code }).eq('id', id).then(({ error }) => {
-      if (error) console.error('Error updating person:', error);
+      if (error) {
+        reportSaveError(error);
+        get().fetchAll();
+      }
     });
   },
 
@@ -152,7 +163,10 @@ export const usePlanningStore = create<PlanningStore>()((set, get) => ({
 
     // CASCADE will handle planning_assignments cleanup
     supabase.from('people').delete().eq('id', id).then(({ error }) => {
-      if (error) console.error('Error removing person:', error);
+      if (error) {
+        reportSaveError(error);
+        get().fetchAll();
+      }
     });
   },
 
@@ -175,14 +189,24 @@ export const usePlanningStore = create<PlanningStore>()((set, get) => ({
     if (personId) {
       supabase.from('planning_assignments')
         .upsert({ date, slot, slot_index: index, person_id: personId }, { onConflict: 'date,slot,slot_index' })
-        .then(({ error }) => { if (error) console.error('Error setting assignment:', error); });
+        .then(({ error }) => {
+          if (error) {
+            reportSaveError(error);
+            get().fetchAll();
+          }
+        });
     } else {
       supabase.from('planning_assignments')
         .delete()
         .eq('date', date)
         .eq('slot', slot)
         .eq('slot_index', index)
-        .then(({ error }) => { if (error) console.error('Error clearing assignment:', error); });
+        .then(({ error }) => {
+          if (error) {
+            reportSaveError(error);
+            get().fetchAll();
+          }
+        });
     }
   },
 
@@ -194,7 +218,10 @@ export const usePlanningStore = create<PlanningStore>()((set, get) => ({
       fullDay: assignment.fullDay || createEmptySlots(),
     };
     set((state) => ({ assignments: { ...state.assignments, [date]: full } }));
-    saveDayToDb(date, full);
+    saveDayToDb(date, full).catch((error) => {
+      reportSaveError(error);
+      get().fetchAll();
+    });
   },
 
   updateSettings: (newSettings: Partial<Settings>) => {
@@ -246,7 +273,10 @@ export const usePlanningStore = create<PlanningStore>()((set, get) => ({
       fullDay: [...(sourceData.fullDay || createEmptySlots())],
     };
     set((state) => ({ assignments: { ...state.assignments, [date]: pasted } }));
-    saveDayToDb(date, pasted);
+    saveDayToDb(date, pasted).catch((error) => {
+      reportSaveError(error);
+      get().fetchAll();
+    });
   },
 
   pasteToWeek: (dates) => {
@@ -265,7 +295,10 @@ export const usePlanningStore = create<PlanningStore>()((set, get) => ({
               afternoon: [...(sourceData[index].afternoon || createEmptySlots())],
               fullDay: [...(sourceData[index].fullDay || createEmptySlots())],
             };
-            saveDayToDb(date, newAssignments[date]);
+            saveDayToDb(date, newAssignments[date]).catch((error) => {
+              reportSaveError(error);
+              get().fetchAll();
+            });
           }
         });
         return { assignments: newAssignments };
@@ -281,7 +314,10 @@ export const usePlanningStore = create<PlanningStore>()((set, get) => ({
             afternoon: [...(sourceData.afternoon || createEmptySlots())],
             fullDay: [...(sourceData.fullDay || createEmptySlots())],
           };
-          saveDayToDb(date, newAssignments[date]);
+          saveDayToDb(date, newAssignments[date]).catch((error) => {
+            reportSaveError(error);
+            get().fetchAll();
+          });
         });
         return { assignments: newAssignments };
       });

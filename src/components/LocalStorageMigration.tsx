@@ -14,13 +14,12 @@ interface MigrationData {
   weeklyTasks: Record<string, { weekStartDate: string; personId: string; day: number; period: string; tasks: string }>;
   settings: { hoursForMorning?: number; hoursForAfternoon?: number; hoursForFullDay?: number };
 }
-
-const KNOWN_KEYS = [
-  'planning-storage',
-  'annual-planning-storage', 
-  'custom-tasks-storage',
-  'weekly-tasks-storage',
-];
+interface LegacyPerson {
+  id?: unknown;
+  name?: unknown;
+  category?: unknown;
+  code?: unknown;
+}
 
 function scanLocalStorage(): MigrationData {
   const result: MigrationData = {
@@ -46,12 +45,21 @@ function scanLocalStorage(): MigrationData {
 
       // Detect people array
       if (Array.isArray(state?.people) && state.people.length > 0 && state.people[0]?.name) {
-        result.people = state.people.map((p: any) => ({
-          id: p.id || Date.now().toString() + Math.random().toString(36).slice(2),
-          name: p.name,
-          category: p.category || 'Bénévole',
-          code: p.code || CODE_MAP[p.category as Category] || 'b',
-        }));
+        result.people = state.people.map((person: LegacyPerson) => {
+          const category =
+            typeof person.category === 'string' && person.category in CODE_MAP
+              ? (person.category as Category)
+              : 'Bénévole';
+          return {
+            id:
+              typeof person.id === 'string'
+                ? person.id
+                : Date.now().toString() + Math.random().toString(36).slice(2),
+            name: String(person.name),
+            category,
+            code: typeof person.code === 'string' ? person.code : CODE_MAP[category],
+          };
+        });
       }
 
       // Detect assignments
@@ -270,8 +278,9 @@ export function LocalStorageMigration() {
           message: `Migration réussie ! ${totalInserted} éléments transférés vers la base partagée.`,
         });
       }
-    } catch (err: any) {
-      setResult({ success: false, message: `Erreur inattendue : ${err.message}` });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      setResult({ success: false, message: `Erreur inattendue : ${message}` });
     } finally {
       setMigrating(false);
     }
@@ -396,10 +405,4 @@ export function LocalStorageMigration() {
       )}
     </div>
   );
-}
-
-export function hasLocalDataToMigrate(): boolean {
-  if (localStorage.getItem('migration-done') === 'true') return false;
-  const data = scanLocalStorage();
-  return hasData(data);
 }

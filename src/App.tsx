@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
+import { AuthGate } from "./components/AuthGate";
 
 const queryClient = new QueryClient();
 
@@ -15,9 +16,9 @@ const App = () => (
       <TooltipProvider>
         <Toaster />
         <Sonner />
-        <BrowserRouter>
+        <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
           <Routes>
-            <Route path="/" element={<Index />} />
+            <Route path="/" element={<AuthGate><Index /></AuthGate>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

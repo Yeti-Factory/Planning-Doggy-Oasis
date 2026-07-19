@@ -1,1 +1,6 @@
-project_id = "zjoaltxkvywvzasaaalh"
+project_id = "planning-doggy-oasis"
+
+[functions.auto-backup]
+# Authentication is performed by the function using BACKUP_INVOKE_SECRET.
+# This supports scheduled pg_net calls without exposing a service-role key.
+verify_jwt = false

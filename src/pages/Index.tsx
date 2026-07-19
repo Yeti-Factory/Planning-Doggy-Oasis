@@ -1,24 +1,47 @@
-import { useState, useEffect } from 'react';
+import { lazy, Suspense, useState, useEffect } from 'react';
 import { AppSidebar } from '@/components/AppSidebar';
-import { AnnualCalendar } from '@/components/AnnualCalendar';
-import { AnnualMonthView } from '@/components/AnnualMonthView';
-import { MonthPlanning } from '@/components/MonthPlanning';
-import { PeopleManager } from '@/components/PeopleManager';
-import { SettingsPanel } from '@/components/SettingsPanel';
-import { UserGuide } from '@/components/UserGuide';
-import { WeeklyTaskPlanner } from '@/components/WeeklyTaskPlanner';
-import { LocalStorageMigration } from '@/components/LocalStorageMigration';
 import { Helmet } from 'react-helmet-async';
+import { Loader2 } from 'lucide-react';
 import { usePlanningStore } from '@/hooks/usePlanningStore';
 import { useAnnualPlanningStore } from '@/hooks/useAnnualPlanningStore';
 import { useCustomTasksStore } from '@/hooks/useCustomTasksStore';
 import { useWeeklyTasksStore } from '@/hooks/useWeeklyTasksStore';
 import { useRestDaysStore } from '@/hooks/useRestDaysStore';
 
+const AnnualCalendar = lazy(() =>
+  import('@/components/AnnualCalendar').then((module) => ({ default: module.AnnualCalendar }))
+);
+const AnnualMonthView = lazy(() =>
+  import('@/components/AnnualMonthView').then((module) => ({ default: module.AnnualMonthView }))
+);
+const MonthPlanning = lazy(() =>
+  import('@/components/MonthPlanning').then((module) => ({ default: module.MonthPlanning }))
+);
+const PeopleManager = lazy(() =>
+  import('@/components/PeopleManager').then((module) => ({ default: module.PeopleManager }))
+);
+const SettingsPanel = lazy(() =>
+  import('@/components/SettingsPanel').then((module) => ({ default: module.SettingsPanel }))
+);
+const UserGuide = lazy(() =>
+  import('@/components/UserGuide').then((module) => ({ default: module.UserGuide }))
+);
+const WeeklyTaskPlanner = lazy(() =>
+  import('@/components/WeeklyTaskPlanner').then((module) => ({ default: module.WeeklyTaskPlanner }))
+);
+const LocalStorageMigration = lazy(() =>
+  import('@/components/LocalStorageMigration').then((module) => ({ default: module.LocalStorageMigration }))
+);
+
 type View = 'guide' | 'people' | 'settings' | 'tasks' | 'migration' | { type: 'month'; year: number; month: number } | { type: 'annual'; year: number } | { type: 'annual-month'; year: number; month: number };
 
 const Index = () => {
-  const [currentView, setCurrentView] = useState<View>({ type: 'month', year: 2026, month: 0 });
+  const today = new Date();
+  const [currentView, setCurrentView] = useState<View>({
+    type: 'month',
+    year: today.getFullYear(),
+    month: today.getMonth(),
+  });
 
   // Fetch data from DB on mount
   const fetchPlanning = usePlanningStore((s) => s.fetchAll);
@@ -84,7 +107,18 @@ const Index = () => {
       <div className="flex h-screen bg-background overflow-hidden">
         <AppSidebar currentView={currentView} onViewChange={setCurrentView} />
         <main className="flex-1 overflow-y-auto">
-          {renderContent()}
+          <Suspense
+            fallback={
+              <div className="grid min-h-full place-items-center text-muted-foreground">
+                <div className="flex items-center gap-2">
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                  Chargement…
+                </div>
+              </div>
+            }
+          >
+            {renderContent()}
+          </Suspense>
         </main>
       </div>
     </>

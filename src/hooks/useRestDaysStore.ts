@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 interface RestDaysStore {
   restDays: Set<string>; // "personId:YYYY-MM-DD"
@@ -51,12 +52,20 @@ export const useRestDaysStore = create<RestDaysStore>()((set, get) => ({
         .eq('person_id', personId)
         .eq('date', date)
         .then(({ error }) => {
-          if (error) console.error('Error removing rest day:', error);
+          if (error) {
+            console.error('Error removing rest day:', error);
+            set({ restDays: new Set(current) });
+            toast.error("Le jour de repos n'a pas été modifié.");
+          }
         });
     } else {
       supabase.from('rest_days').insert({ person_id: personId, date })
         .then(({ error }) => {
-          if (error) console.error('Error adding rest day:', error);
+          if (error) {
+            console.error('Error adding rest day:', error);
+            set({ restDays: new Set(current) });
+            toast.error("Le jour de repos n'a pas été ajouté. Vérifiez que la personne n'est pas affectée ce jour-là.");
+          }
         });
     }
   },

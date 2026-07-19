@@ -203,7 +203,17 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      is_planning_member: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
+      replace_day_assignments: {
+        Args: {
+          p_date: string
+          p_rows: Json
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never

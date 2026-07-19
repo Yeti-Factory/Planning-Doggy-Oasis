@@ -30,7 +30,7 @@ Les données ne sont pas stockées sur le VPS de l'interface. Elles se trouvent 
 
 ### Démarrage local
 
-Prérequis : Node.js 22 et npm.
+Prérequis : Node.js 24 recommandé, ou Node.js 22.13 minimum, et npm.
 
 ```bash
 git clone https://github.com/Yeti-Factory/Planning-Doggy-Oasis.git
@@ -77,6 +77,8 @@ WHERE user_id = (SELECT id FROM auth.users WHERE lower(email) = lower('UTILISATE
 Tous les membres ont actuellement les mêmes droits fonctionnels. La table `app_members` empêche néanmoins un compte créé par erreur ou par inscription publique d'accéder aux données.
 
 ### Sauvegarde automatique
+
+Le dépôt contient la fonction et l'exemple de cron, mais leur présence ne prouve pas qu'ils sont déployés. Après chaque création ou transfert de projet, configurer les secrets, déployer la fonction, créer le cron, constater un fichier puis tester une restauration.
 
 Créer un fichier local `supabase/.env` à partir de `supabase/.env.example`, générer une longue valeur aléatoire pour `BACKUP_INVOKE_SECRET`, puis :
 
@@ -139,7 +141,7 @@ The application data is not stored on the front-end VPS. It lives in the associa
 
 ### Local development
 
-Requirements: Node.js 22 and npm.
+Requirements: Node.js 24 recommended, or Node.js 22.13 minimum, and npm.
 
 ```bash
 git clone https://github.com/Yeti-Factory/Planning-Doggy-Oasis.git
@@ -171,6 +173,8 @@ npm run check
 Auth users that already exist when the migration runs are automatically added as administrators. Users created later must be added to `app_members`. All approved members currently have the same application permissions.
 
 ### Automatic backups
+
+The repository contains the function and cron example, but their presence does not prove they are deployed. After creating or moving a project, set the secrets, deploy the function, create the cron, observe a generated file and test a restore.
 
 Create a private `supabase/.env` from `supabase/.env.example`, generate a long random `BACKUP_INVOKE_SECRET`, then run:
 

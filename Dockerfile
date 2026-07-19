@@ -20,6 +20,9 @@ FROM nginx:1.29-alpine
 
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=build /app/dist /usr/share/nginx/html
+# Coolify's static-image wrapper copies /app into its own Nginx image.
+# Keeping the same assets here preserves both Coolify and standalone Docker use.
+COPY --from=build /app/dist /app
 
 EXPOSE 80
 

@@ -25,6 +25,3 @@ COPY --from=build /app/dist /usr/share/nginx/html
 COPY --from=build /app/dist /app
 
 EXPOSE 80
-
-HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
-  CMD wget -qO- http://127.0.0.1:80/healthz || exit 1

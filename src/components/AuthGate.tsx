@@ -19,9 +19,19 @@ function getErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : 'Une erreur inattendue est survenue.';
 }
 
+function getInitialScreen(): Screen {
+  const hashParameters = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+  const queryParameters = new URLSearchParams(window.location.search);
+  const authFlowType = hashParameters.get('type') ?? queryParameters.get('type');
+
+  return authFlowType === 'invite' || authFlowType === 'recovery'
+    ? 'update-password'
+    : 'sign-in';
+}
+
 export function AuthGate({ children }: AuthGateProps) {
   const [session, setSession] = useState<Session | null>(null);
-  const [screen, setScreen] = useState<Screen>('sign-in');
+  const [screen, setScreen] = useState<Screen>(getInitialScreen);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');

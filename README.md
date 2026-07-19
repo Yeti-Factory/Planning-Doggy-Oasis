@@ -99,7 +99,7 @@ docker build \
 
 docker run -d --name planning-doggy-oasis \
   --restart unless-stopped \
-  -p 127.0.0.1:8080:8080 \
+  -p 127.0.0.1:8080:80 \
   planning-doggy-oasis:1.0.0
 ```
 
